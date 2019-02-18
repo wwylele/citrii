@@ -314,8 +314,11 @@ fn main() {
 
     unsafe {
         gl::load_with(|symbol| gl_window.get_proc_address(symbol) as *const _);
-        gl::Enable(gl::DEBUG_OUTPUT);
-        gl::DebugMessageCallback(gl_debug_message, std::ptr::null_mut());
+
+        if gl::DebugMessageCallback::is_loaded() {
+            gl::Enable(gl::DEBUG_OUTPUT);
+            gl::DebugMessageCallback(gl_debug_message, std::ptr::null_mut());
+        }
 
         gl::ClearColor(0.5, 1.0, 0.5, 1.0);
         gl::ClearDepth(1.0);
