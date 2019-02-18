@@ -35,7 +35,9 @@ vec4 layer(vec4 base, int i, sampler2D top) {
         coord = (coord - window.xy) / (window.zw - window.xy);
     }
 
-    vec4 tex_color = color_tran[i] * texture(top, coord);
+    vec4 tex_origin = texture(top, coord);
+    vec4 tex_color = color_tran[i] * vec4(tex_origin.xyz, 1.0);
+    tex_color.a = min(tex_color.a, tex_origin.a);
     return vec4(base.xyz * (1.0 - tex_color.w) + tex_color.xyz * tex_color.w, max(base.w, tex_color.w));
 }
 

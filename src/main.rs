@@ -31,7 +31,20 @@ struct HeadRenderInfo {
     beard_color: (f32, f32, f32),
     glass_color: (f32, f32, f32),
     eye_color: (f32, f32, f32),
+    eyebrow_color: (f32, f32, f32),
     lip_color: (f32, f32, f32),
+}
+
+struct TextureWindow {
+    min: cgmath::Point2<f32>,
+    max: cgmath::Point2<f32>,
+    mirrored: bool
+}
+
+struct LayerConfig {
+    texture: i32,
+    tran: cgmath::Matrix4<f32>,
+    window: Option<TextureWindow>,
 }
 
 struct HeadRenderer {
@@ -45,26 +58,49 @@ impl HeadRenderer {
         HeadRenderer{asset, head_shader}
     }
 
-    fn render_head(&mut self, info: &HeadRenderInfo, object_tran: &cgmath::Matrix4<f32>, aspect: f32) {
-        let set_object_tran = |shader: &mut shader::Shader, object_tran: &cgmath::Matrix4<f32>| {
-            let object_tran_inv = object_tran.invert().unwrap();
-            shader.set_uniform_mat4("object_tran", &object_tran);
-            shader.set_uniform_mat4("object_tran_inv", &object_tran_inv);
-        };
+    fn set_object_tran(&mut self, object_tran: &cgmath::Matrix4<f32>) {
+        let object_tran_inv = object_tran.invert().unwrap();
+        self.head_shader.set_uniform_mat4("object_tran", &object_tran);
+        self.head_shader.set_uniform_mat4("object_tran_inv", &object_tran_inv);
+    }
 
-        let draw_model = |list: &Vec<Option<model::Model>>, index: usize| {
+    fn set_layers (&mut self, configs: [Option<LayerConfig>; 5]) {
+        for layer in 0 .. 5 {
+            match &configs[layer] {
+                None => self.head_shader.set_uniform_mat4(&format!("color_tran[{}]", layer),
+                    &cgmath::Matrix4::<f32>::zero()),
+                Some(LayerConfig{texture, tran, window}) => {
+                    self.head_shader.set_uniform_i(&format!("tex{}", layer), *texture);
+                    self.head_shader.set_uniform_mat4(&format!("color_tran[{}]", layer),
+                        &tran);
+                    let mode_code = match window {
+                        None => 0,
+                        Some(TextureWindow{min, max, mirrored}) => {
+                            self.head_shader.set_uniform_vec(&format!("tex_window[{}]", layer),
+                                &cgmath::Vector4::new(min.x, min.y, max.x, max.y));
+                            if *mirrored {2} else {1}
+                        }
+                    };
+                    self.head_shader.set_uniform_i(&format!("tex_mode[{}]", layer), mode_code);
+                }
+            }
+        }
+    }
+
+    fn render_head(&mut self, info: &HeadRenderInfo, object_tran: &cgmath::Matrix4<f32>, aspect: f32) {
+        fn draw_model(list: &Vec<Option<model::Model>>, index: usize) {
             list.get(index).and_then(|o|o.as_ref()).map(|m|m.draw());
         };
 
-        let bind_texture = |list: &Vec<Option<texture::Texture>>, index: usize, unit: u32| {
+        fn bind_texture(list: &Vec<Option<texture::Texture>>, index: usize, unit: u32) {
             list.get(index).and_then(|o|o.as_ref()).map(|t|t.bind(unit));
         };
 
-        let convert_color = |color: &(f32, f32, f32), alpha: f32| -> cgmath::Vector4<f32> {
+        fn convert_color(color: &(f32, f32, f32), alpha: f32) -> cgmath::Vector4<f32> {
             cgmath::Vector4::new(color.0, color.1, color.2, alpha)
         };
 
-        let scale4 = |v: &cgmath::Vector4<f32>| -> cgmath::Matrix4<f32> {
+        fn scale4(v: &cgmath::Vector4<f32>) -> cgmath::Matrix4<f32> {
             cgmath::Matrix4::from_cols(
                 cgmath::Vector4::new(v.x, 0.0, 0.0, 0.0),
                 cgmath::Vector4::new(0.0, v.y, 0.0, 0.0),
@@ -73,47 +109,16 @@ impl HeadRenderer {
             )
         };
 
-        struct TextureWindow {
-            min: cgmath::Point2<f32>,
-            max: cgmath::Point2<f32>,
-            mirrored: bool
-        }
-
-        struct LayerConfig {
-            texture: i32,
-            tran: cgmath::Matrix4<f32>,
-            window: Option<TextureWindow>,
-        }
-
-        let set_layers = |shader: &mut shader::Shader, configs: [Option<LayerConfig>; 5]| {
-            for layer in 0 .. 5 {
-                match &configs[layer] {
-                    None => shader.set_uniform_mat4(&format!("color_tran[{}]", layer),
-                        &cgmath::Matrix4::<f32>::zero()),
-                    Some(LayerConfig{texture, tran, window}) => {
-                        shader.set_uniform_i(&format!("tex{}", layer), *texture);
-                        shader.set_uniform_mat4(&format!("color_tran[{}]", layer),
-                            &tran);
-                        let mode_code = match window {
-                            None => 0,
-                            Some(TextureWindow{min, max, mirrored}) => {
-                                shader.set_uniform_vec(&format!("tex_window[{}]", layer),
-                                    &cgmath::Vector4::new(min.x, min.y, max.x, max.y));
-                                if *mirrored {2} else {1}
-                            }
-                        };
-                        shader.set_uniform_i(&format!("tex_mode[{}]", layer), mode_code);
-                    }
-                }
-            }
-        };
-
         let zero_vec4 = cgmath::Vector4::<f32>::zero();
 
         let face_config = match self.asset.face_configs.get(info.face).and_then(|o|o.as_ref()) {
             Some(f) => f,
             None => return
         };
+
+        let hair_pos = cgmath::Vector3::from(face_config.hair_pos);
+        let nose_pos = cgmath::Vector3::from(face_config.nose_pos);
+        let beard_pos = cgmath::Vector3::from(face_config.beard_pos);
 
         self.head_shader.bind();
 
@@ -153,13 +158,13 @@ impl HeadRenderer {
         }
 
         // Draw face
-        set_object_tran(&mut self.head_shader, &object_tran);
+        self.set_object_tran(&object_tran);
         self.head_shader.set_uniform_vec("base_color", &convert_color(&info.face_color, 1.0));
         // layer order:
         // 0 - makeup
         // 1 - wrinkle
         // 2 - beard
-        set_layers(&mut self.head_shader, [
+        self.set_layers([
             Some(LayerConfig{texture:5, tran: cgmath::Matrix4::<f32>::identity(), window: None}),
             Some(LayerConfig{texture:4, tran: cgmath::Matrix4::<f32>::identity(), window: None}),
             Some(LayerConfig{texture:3, tran: cgmath::Matrix4::from_cols(
@@ -175,28 +180,17 @@ impl HeadRenderer {
         draw_model(&self.asset.face_models, info.face);
 
         // Draw hair
-        set_object_tran(&mut self.head_shader,
-            &(object_tran * cgmath::Matrix4::from_translation(
-            cgmath::Vector3::from(face_config.hair_pos))));
+        self.set_object_tran(&(object_tran * cgmath::Matrix4::from_translation(hair_pos)));
         let hair_index = info.hair * 2 + if info.full_hair {0} else {1};
 
         self.head_shader.set_uniform_vec("base_color", &convert_color(&info.wearing_color, 1.0));
-        set_layers(&mut self.head_shader, [
+        self.set_layers([
             Some(LayerConfig{texture:0, tran: scale4(&convert_color(&info.wearing_color, 0.4)), window: None}),
-            None,
-            None,
-            None,
-            None,
+            None, None, None, None,
         ]);
         draw_model(&self.asset.accessory_models, hair_index);
 
-        set_layers(&mut self.head_shader, [
-            None,
-            None,
-            None,
-            None,
-            None,
-        ]);
+        self.set_layers([None,  None,  None, None, None,]);
 
         self.head_shader.set_uniform_vec("base_color", &convert_color(&info.hair_color, 1.0));
         draw_model(&self.asset.hair_models, hair_index);
@@ -205,22 +199,18 @@ impl HeadRenderer {
         draw_model(&self.asset.scalp_models, hair_index);
 
         // Draw beard
-        set_object_tran(&mut self.head_shader,
-            &(object_tran * cgmath::Matrix4::from_translation(
-            cgmath::Vector3::from(face_config.beard_pos))));
+        self.set_object_tran(&(object_tran * cgmath::Matrix4::from_translation(beard_pos)));
         self.head_shader.set_uniform_vec("base_color", &convert_color(&info.beard_color, 1.0));
         draw_model(&self.asset.beard_models, info.beard);
 
         // Draw nose model
-        set_object_tran(&mut self.head_shader,
-            &(object_tran * cgmath::Matrix4::from_translation(
-            cgmath::Vector3::from(face_config.nose_pos))));
+        self.set_object_tran(&(object_tran * cgmath::Matrix4::from_translation(nose_pos)));
 
         self.head_shader.set_uniform_vec("base_color", &convert_color(&info.face_color, 1.0));
         draw_model(&self.asset.nose_models, info.nose);
 
         // Draw face canvas
-        set_object_tran(&mut self.head_shader, &object_tran);
+        self.set_object_tran(&object_tran);
         self.head_shader.set_uniform_vec("base_color", &zero_vec4);
         // layer order:
         // 0 - mole
@@ -228,7 +218,7 @@ impl HeadRenderer {
         // 2 - eyebrow
         // 3 - lip
         // 4 - mustache
-        set_layers(&mut self.head_shader, [
+        self.set_layers([
             Some(LayerConfig{texture:7, tran: cgmath::Matrix4::identity(), window: Some(TextureWindow{
                     min: cgmath::Point2::new(0.35, 0.35), max: cgmath::Point2::new(0.4, 0.4), mirrored: false
                 })}),
@@ -240,7 +230,12 @@ impl HeadRenderer {
                 ), window: Some(TextureWindow{
                     min: cgmath::Point2::new(0.30, 0.45), max: cgmath::Point2::new(0.48, 0.6), mirrored: true
                 })}),
-            Some(LayerConfig{texture:2, tran: cgmath::Matrix4::identity(), window: Some(TextureWindow{
+            Some(LayerConfig{texture:2, tran: cgmath::Matrix4::from_cols(
+                    cgmath::Vector4::zero(),
+                    cgmath::Vector4::zero(),
+                    cgmath::Vector4::zero(),
+                    convert_color(&info.eyebrow_color, 1.0),
+                ), window: Some(TextureWindow{
                     min: cgmath::Point2::new(0.30, 0.5), max: cgmath::Point2::new(0.47, 0.65), mirrored: true
                 })}),
             Some(LayerConfig{texture:8, tran: cgmath::Matrix4::from_cols(
@@ -251,7 +246,12 @@ impl HeadRenderer {
                 ), window: Some(TextureWindow{
                     min: cgmath::Point2::new(0.43, 0.3), max: cgmath::Point2::new(0.57, 0.4), mirrored: false
                 })}),
-            Some(LayerConfig{texture:9, tran: cgmath::Matrix4::identity(), window: Some(TextureWindow{
+            Some(LayerConfig{texture:9, tran: cgmath::Matrix4::from_cols(
+                    cgmath::Vector4::zero(),
+                    cgmath::Vector4::zero(),
+                    cgmath::Vector4::zero(),
+                    convert_color(&info.beard_color, 1.0),
+                ), window: Some(TextureWindow{
                     min: cgmath::Point2::new(0.4, 0.27), max: cgmath::Point2::new(0.5, 0.47), mirrored: true
                 })}),
         ]);
@@ -259,17 +259,12 @@ impl HeadRenderer {
         draw_model(&self.asset.face_canvas_models, info.face);
 
         // Draw nose canvas
-        set_object_tran(&mut self.head_shader,
-            &(object_tran * cgmath::Matrix4::from_translation(
-            cgmath::Vector3::from(face_config.nose_pos))));
+        self.set_object_tran(&(object_tran * cgmath::Matrix4::from_translation(nose_pos)));
 
         self.head_shader.set_uniform_vec("base_color", &zero_vec4);
-        set_layers(&mut self.head_shader, [
+        self.set_layers([
             Some(LayerConfig{texture:10, tran: cgmath::Matrix4::identity(), window: None}),
-            None,
-            None,
-            None,
-            None,
+            None, None, None, None,
         ]);
         draw_model(&self.asset.nose_canvas_models, info.nose);
 
@@ -278,16 +273,12 @@ impl HeadRenderer {
             gl::Disable(gl::CULL_FACE);
         }
 
-        set_object_tran(&mut self.head_shader,
-            &(object_tran * cgmath::Matrix4::from_translation(
-            cgmath::Vector3::from(face_config.nose_pos) + cgmath::Vector3::new(0.0, 5.0, 2.0))));
+        self.set_object_tran(&(object_tran * cgmath::Matrix4::from_translation(nose_pos
+            + cgmath::Vector3::new(0.0, 5.0, 2.0))));
         self.head_shader.set_uniform_vec("base_color", &zero_vec4);
-        set_layers(&mut self.head_shader, [
+        self.set_layers([
             Some(LayerConfig{texture:6, tran: scale4(&convert_color(&info.glass_color, 1.0)), window: None}),
-            None,
-            None,
-            None,
-            None,
+            None, None, None, None,
         ]);
         draw_model(&self.asset.glass_models, 0);
     }
@@ -401,6 +392,7 @@ fn main() {
             beard_color: (0.2, 0.2, 0.0),
             glass_color: (0.8, 0.0, 1.0),
             eye_color: (0.0, 1.0, 0.0),
+            eyebrow_color: (0.5, 0.5, 0.5),
             lip_color: (1.0, 0.2, 0.2),
         };
 
