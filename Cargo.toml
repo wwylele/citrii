@@ -1,11 +1,7 @@
-[package]
-name = "citrii"
-version = "0.1.0"
-authors = ["Weiyi Wang <wwylele@gmail.com>"]
-edition = "2018"
+[workspace]
 
-[dependencies]
-nom = "^4.2"
-gl = "*"
-glutin = "*"
-cgmath = "*"
+members = [
+    "citrii",
+    "byte_struct",
+    "byte_struct_derive",
+]

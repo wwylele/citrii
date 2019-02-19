@@ -1,0 +1,12 @@
+[package]
+name = "citrii"
+version = "0.1.0"
+authors = ["Weiyi Wang <wwylele@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+nom = "^4.2"
+gl = "*"
+glutin = "*"
+cgmath = "*"
+byte_struct = { path = "../byte_struct"}
