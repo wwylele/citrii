@@ -52,7 +52,9 @@ fn byte_struct_macro_derive_impl(input: TokenStream, endianness: Endianness) -> 
         // quote! seems not liking using the same object twice in the content
         let ty1 = ty0.clone();
         let ty2 = ty0.clone();
+        let ty3 = ty0.clone();
         let ident2 = ident1.clone();
+        let ident3 = ident1.clone();
         let gen = quote! {
             impl ByteStruct for #name {
                 fn write_bytes(&self, bytes: &mut [u8]) {
@@ -63,13 +65,14 @@ fn byte_struct_macro_derive_impl(input: TokenStream, endianness: Endianness) -> 
                         cur += len;
                     })*
                 }
-                fn read_bytes(&mut self, bytes: &[u8])  {
+                fn read_bytes(bytes: &[u8]) -> Self {
                     let mut cur: usize = 0;
-                    #({
+                    #(
                         let len = <#ty2>::byte_len();
-                        self.#ident2.#read_bytes_fn(&bytes[cur .. (cur + len)]);
+                        let #ident2 = <#ty3>::#read_bytes_fn(&bytes[cur .. (cur + len)]);
                         cur += len;
-                    })*
+                    )*
+                    #name { #(#ident3),* }
                 }
             }
 
@@ -82,14 +85,14 @@ fn byte_struct_macro_derive_impl(input: TokenStream, endianness: Endianness) -> 
                 fn write_le_bytes(&self, bytes: &mut [u8]) {
                     self.write_bytes(bytes);
                 }
-                fn read_le_bytes(&mut self, bytes: &[u8])  {
-                    self.read_bytes(bytes);
+                fn read_le_bytes(bytes: &[u8]) -> Self {
+                    <#name>::read_bytes(bytes)
                 }
                 fn write_be_bytes(&self, bytes: &mut [u8]) {
                     self.write_bytes(bytes);
                 }
-                fn read_be_bytes(&mut self, bytes: &[u8])  {
-                    self.read_bytes(bytes);
+                fn read_be_bytes(bytes: &[u8]) -> Self {
+                    <#name>::read_bytes(bytes)
                 }
             }
         };
