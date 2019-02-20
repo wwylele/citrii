@@ -75,6 +75,12 @@ impl Shader {
         }
     }
 
+    pub fn set_uniform_mat3(&mut self, name: &str, v: &cgmath::Matrix3<f32>) {
+        unsafe {
+            gl::UniformMatrix3fv(self.uniform_location(name), 1, gl::FALSE, v.as_ptr());
+        }
+    }
+
     fn uniform_location(&mut self, name: &str) -> GLint {
         let cached = self.uniform_map.get(name);
         cached.cloned().unwrap_or_else(||{

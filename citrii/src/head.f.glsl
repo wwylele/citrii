@@ -12,7 +12,7 @@ uniform vec3 light_source;
 uniform vec4 base_color;
 uniform mat4 color_tran[5];
 uniform int tex_mode[5]; // 0: normal; 1: windowed; 2: windowed with mirror
-uniform vec4 tex_window[5];
+uniform mat3 tex_tran[5];
 uniform sampler2D tex0;
 uniform sampler2D tex1;
 uniform sampler2D tex2;
@@ -27,12 +27,10 @@ vec4 layer(vec4 base, int i, sampler2D top) {
     }
 
     if (tex_mode[i] != 0) {
-        vec4 window = tex_window[i];
-        if (any(lessThan(coord, window.xy)) || any(greaterThan(coord, window.zw))) {
+        coord = (tex_tran[i] * vec3(coord, 1.0)).xy;
+        if (any(lessThan(coord, vec2(0.0))) || any(greaterThan(coord, vec2(1.0)))) {
             return base;
         }
-
-        coord = (coord - window.xy) / (window.zw - window.xy);
     }
 
     vec4 tex_origin = texture(top, coord);
@@ -56,7 +54,7 @@ void main() {
 
     if (mixed_color.w < 0.01) discard;
 
-    float diffuse = max(0.0, dot(n, l)) * 0.5 + 0.5;
+    float diffuse = max(0.0, dot(n, l)) * 0.2 + 0.8;
     float specular = 0.3 * pow(max(0.0, dot(n, h)), 5);
 
     out_color = vec4(clamp(mixed_color.xyz * diffuse + specular * vec3(1.0), 0.0, 1.0), mixed_color.w);

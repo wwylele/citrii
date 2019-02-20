@@ -109,7 +109,6 @@ impl ByteStructImpl for i32 {
     }
 }
 
-#[macro_export]
 macro_rules! byte_struct_array {
     ($x:expr) => {
         impl<T: ByteStructImpl + Copy + Default> ByteStructImpl for [T; $x] {
@@ -162,12 +161,15 @@ macro_rules! bsa4 { ($x:expr) => { bsa3!($x); bsa3!(8 + $x);}}
 macro_rules! bsa5 { ($x:expr) => { bsa4!($x); bsa4!(16 + $x);}}
 bsa5!(1);
 
+byte_struct_array!(100);
+byte_struct_array!(3001);
+
 #[macro_export]
 macro_rules! bitfields{
     ($name:ident : $base:ty {$($field_name:ident : $field_len:expr),+ $(,)? }) => {
-        #[derive(PartialEq, Debug)]
-        struct $name {
-            $($field_name: $base),*
+        #[derive(PartialEq, Debug, Default, Copy, Clone)]
+        pub struct $name {
+            pub $($field_name: $base),*
         }
 
         impl $name {
