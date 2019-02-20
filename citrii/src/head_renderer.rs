@@ -234,7 +234,7 @@ impl HeadRenderer {
         ]);
         draw_model(&self.asset.accessory_models, hair_index);
 
-        self.set_layers([None,  None,  None, None, None,]);
+        self.set_layers([None, None, None, None, None,]);
 
         self.head_shader.set_uniform_vec("base_color", &convert_color(&info.hair_color, 1.0));
         draw_model(&self.asset.hair_models, hair_index);
