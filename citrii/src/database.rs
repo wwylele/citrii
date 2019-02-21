@@ -121,8 +121,8 @@ bitfields!(
     ProfileBeard: u16 { // 0x42
         style: 3,
         color: 3,
-        mustach_scale: 4,
-        mustach_y: 5,
+        mustache_scale: 4,
+        mustache_y: 5,
         padding: 1
     }
 );
@@ -379,9 +379,9 @@ impl Profile {
             lip_y: 1.0 - (29.259 + Y_STEP * self.misc.lip_y as f32) * FACE_SCALE,
             lip_width: 6.1875 * scaling(self.lip.scale as f32) * FACE_SCALE,
             lip_height: 4.5 * scaling(self.lip.scale as f32) * y_scaling(self.lip.y_scale as f32) * FACE_SCALE,
-            mustache_y: 1.0 - (31.764 + Y_STEP * self.beard.mustach_y as f32) * FACE_SCALE,
-            mustache_width: 4.5 * scaling(self.beard.mustach_scale as f32) * FACE_SCALE,
-            mustache_height: 9.0 * scaling(self.beard.mustach_scale as f32) * FACE_SCALE,
+            mustache_y: 1.0 - (31.764 + Y_STEP * self.beard.mustache_y as f32) * FACE_SCALE,
+            mustache_width: 4.5 * scaling(self.beard.mustache_scale as f32) * FACE_SCALE,
+            mustache_height: 9.0 * scaling(self.beard.mustache_scale as f32) * FACE_SCALE,
             eye_x: 0.88961 * self.eye.x as f32 * FACE_SCALE,
             eye_y: 1.0 - (18.452 + Y_STEP * self.eye.y as f32) * FACE_SCALE,
             eye_width: 5.3438 * scaling(self.eye.scale as f32) * FACE_SCALE,
@@ -406,7 +406,7 @@ pub struct Database {
     pub cfhe: [u8; 4],
     pub magic2: u32,
     pub unk: [[u8; 14]; 3001],
-    pub crc: u16,
+    pub crc: u16, // actually BE, but we access this field from raw bytes
 }
 
 #[test]

@@ -169,7 +169,7 @@ macro_rules! bitfields{
     ($name:ident : $base:ty {$($field_name:ident : $field_len:expr),+ $(,)? }) => {
         #[derive(PartialEq, Debug, Default, Copy, Clone)]
         pub struct $name {
-            pub $($field_name: $base),*
+            $(pub $field_name: $base),*
         }
 
         impl $name {
