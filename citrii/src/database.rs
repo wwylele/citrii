@@ -1,4 +1,5 @@
 use crate::head_renderer;
+use crate::color::*;
 use byte_struct::*;
 
 bitfields!(
@@ -169,77 +170,6 @@ pub struct Profile {
     pub author: [u16; 10],
 }
 
-const SKIN_COLOR_TABLE: [(u8, u8, u8); 6] = [
-    (255, 211, 173),
-    (255, 182, 107),
-    (222, 121, 66),
-    (255, 170, 140),
-    (173, 81, 41),
-    (99, 44, 24),
-];
-
-const SKIHAIR_COLOR_TABLE: [(u8, u8, u8); 8] = [
-    (30, 26, 24),
-    (71, 38, 22),
-    (104, 24, 20),
-    (124, 58, 20),
-    (120, 128, 128),
-    (78, 62, 16),
-    (132, 85, 23),
-    (208, 160, 74),
-];
-
-const EYE_COLOR_TABLE: [(u8, u8, u8); 6] = [
-    (0, 0, 0),
-    (108, 112, 112),
-    (102, 60, 44),
-    (93, 91, 46),
-    (70, 84, 168),
-    (56, 112, 88),
-];
-
-const LIP_COLOR_TABLE: [(u8, u8, u8); 5] = [
-    (216, 82, 8),
-    (239, 12, 8),
-    (245, 72, 72),
-    (240, 154, 116),
-    (140, 80, 64),
-];
-
-const GLASS_COLOR_TABLE: [(u8, u8, u8); 6] = [
-    (24, 24, 24),
-    (96, 56, 16),
-    (168, 16, 8),
-    (32, 48, 104),
-    (168, 96, 0),
-    (120, 112, 104),
-];
-
-const WEARING_COLOR_TABLE: [(u8, u8, u8); 12] = [
-    (210, 30, 30),
-    (255, 110, 25),
-    (255, 216, 32),
-    (120, 210, 32),
-    (0, 120, 48),
-    (32, 72, 152),
-    (60, 170, 222),
-    (245, 90, 125),
-    (115, 40, 173),
-    (72, 56, 24),
-    (224, 224, 224),
-    (24, 24, 20),
-];
-
-const INVALID_COLOR: (u8, u8, u8) = (255, 255, 255);
-
-fn convert_color((r, g, b): &(u8, u8, u8)) -> (f32, f32, f32) {
-    (*r as f32 / 255.0, *g as f32 / 255.0, *b as f32 / 255.0)
-}
-
-fn get_color(table: &[(u8, u8, u8)], index: usize) -> (f32, f32, f32) {
-    convert_color(table.get(index).unwrap_or(&INVALID_COLOR))
-}
-
 const EYE_ROTATION_OFFSETS: [u32; 62] = [
     3,
     4,
@@ -360,13 +290,13 @@ impl Profile {
 
             full_hair: true,
 
-            hair_color: get_color(&SKIHAIR_COLOR_TABLE, self.hair.color as usize),
+            hair_color: get_color(&HAIR_COLOR_TABLE, self.hair.color as usize),
             wearing_color: get_color(&WEARING_COLOR_TABLE, self.general.wearing_color as usize),
             face_color: get_color(&SKIN_COLOR_TABLE, self.face.color as usize),
-            beard_color: get_color(&SKIHAIR_COLOR_TABLE, self.beard.color as usize),
+            beard_color: get_color(&HAIR_COLOR_TABLE, self.beard.color as usize),
             glass_color: get_color(&GLASS_COLOR_TABLE, self.glass.color as usize),
             eye_color: get_color(&EYE_COLOR_TABLE, self.eye.color as usize),
-            eyebrow_color: get_color(&SKIHAIR_COLOR_TABLE, self.eyebrow.color as usize),
+            eyebrow_color: get_color(&HAIR_COLOR_TABLE, self.eyebrow.color as usize),
             lip_color: get_color(&LIP_COLOR_TABLE, self.lip.color as usize),
 
             nose_scale: 0.4 + 0.175 * self.nose.scale as f32,

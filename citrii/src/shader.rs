@@ -20,7 +20,7 @@ unsafe fn create_shader(code: &str, shader_type: GLenum) -> GLuint {
 
 pub struct Shader {
     handle: GLuint,
-    uniform_map: std::collections::HashMap<String, GLint>
+    uniform_map: std::cell::RefCell<std::collections::HashMap<String, GLint>>
 }
 
 impl Shader {
@@ -42,7 +42,7 @@ impl Shader {
             }
             gl::DeleteShader(vs);
             gl::DeleteShader(fs);
-            Shader{handle, uniform_map: std::collections::HashMap::new()}
+            Shader{handle, uniform_map: std::cell::RefCell::new(std::collections::HashMap::new())}
         }
     }
 
@@ -52,7 +52,7 @@ impl Shader {
         }
     }
 
-    pub fn set_uniform_vec<T: cgmath::Array<Element = f32>>(&mut self, name: &str, v: &T) {
+    pub fn set_uniform_vec<T: cgmath::Array<Element = f32>>(&self, name: &str, v: &T) {
         unsafe {
             match T::len() {
                 2 => gl::Uniform2fv(self.uniform_location(name), 1, v.as_ptr()),
@@ -63,31 +63,32 @@ impl Shader {
         }
     }
 
-    pub fn set_uniform_i(&mut self, name: &str, v: i32) {
+    pub fn set_uniform_i(&self, name: &str, v: i32) {
         unsafe {
             gl::Uniform1i(self.uniform_location(name), v);
         }
     }
 
-    pub fn set_uniform_mat4(&mut self, name: &str, v: &cgmath::Matrix4<f32>) {
+    pub fn set_uniform_mat4(&self, name: &str, v: &cgmath::Matrix4<f32>) {
         unsafe {
             gl::UniformMatrix4fv(self.uniform_location(name), 1, gl::FALSE, v.as_ptr());
         }
     }
 
-    pub fn set_uniform_mat3(&mut self, name: &str, v: &cgmath::Matrix3<f32>) {
+    pub fn set_uniform_mat3(&self, name: &str, v: &cgmath::Matrix3<f32>) {
         unsafe {
             gl::UniformMatrix3fv(self.uniform_location(name), 1, gl::FALSE, v.as_ptr());
         }
     }
 
-    fn uniform_location(&mut self, name: &str) -> GLint {
-        let cached = self.uniform_map.get(name);
+    fn uniform_location(&self, name: &str) -> GLint {
+        let mut uniform_map = self.uniform_map.borrow_mut();
+        let cached = uniform_map.get(name);
         cached.cloned().unwrap_or_else(||{
             unsafe {
                 let c_string = std::ffi::CString::new(name).unwrap();
                 let location = gl::GetUniformLocation(self.handle, c_string.as_ptr());
-                self.uniform_map.insert(String::from(name), location);
+                uniform_map.insert(String::from(name), location);
                 location
             }
         })

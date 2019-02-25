@@ -36,19 +36,25 @@ impl Model {
         let mut ibo = 0 as GLuint;
         unsafe {
             gl::GenVertexArrays(1, &mut vao);
-            gl::GenBuffers(1, &mut vbo);
-            gl::GenBuffers(1, &mut ibo);
             gl::BindVertexArray(vao);
-            gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ibo);
-            gl::BufferData(gl::ARRAY_BUFFER,
-                vertex.len() as GLsizeiptr,
-                vertex.as_ptr() as *const GLvoid,
-                gl::STATIC_DRAW);
-            gl::BufferData(gl::ELEMENT_ARRAY_BUFFER,
-                index.len() as GLsizeiptr,
-                index.as_ptr() as *const GLvoid,
-                gl::STATIC_DRAW);
+
+            if vertex.len() != 0 {
+                gl::GenBuffers(1, &mut vbo);
+                gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+                gl::BufferData(gl::ARRAY_BUFFER,
+                    vertex.len() as GLsizeiptr,
+                    vertex.as_ptr() as *const GLvoid,
+                    gl::STATIC_DRAW);
+            }
+
+            if index.len() != 0 {
+                gl::GenBuffers(1, &mut ibo);
+                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ibo);
+                gl::BufferData(gl::ELEMENT_ARRAY_BUFFER,
+                    index.len() as GLsizeiptr,
+                    index.as_ptr() as *const GLvoid,
+                    gl::STATIC_DRAW);
+            }
 
             for (index, attribute) in &attribute_map {
                 match attribute {
@@ -91,8 +97,8 @@ impl Drop for Model {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteVertexArrays(1, &self.vao);
-            gl::DeleteBuffers(1, &self.vbo);
-            gl::DeleteBuffers(1, &self.ibo);
+            if self.vbo != 0 {gl::DeleteBuffers(1, &self.vbo);}
+            if self.ibo != 0 {gl::DeleteBuffers(1, &self.ibo);}
         }
     }
 }
