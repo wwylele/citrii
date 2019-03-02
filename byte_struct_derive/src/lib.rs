@@ -60,7 +60,7 @@ fn byte_struct_macro_derive_impl(input: TokenStream, endianness: Endianness) -> 
                 fn write_bytes(&self, bytes: &mut [u8]) {
                     let mut cur: usize = 0;
                     #({
-                        let len = <#ty1>::byte_len();
+                        let len = <#ty1>::BYTE_LEN;
                         self.#ident1.#write_bytes_fn(&mut bytes[cur .. (cur + len)]);
                         cur += len;
                     })*
@@ -68,7 +68,7 @@ fn byte_struct_macro_derive_impl(input: TokenStream, endianness: Endianness) -> 
                 fn read_bytes(bytes: &[u8]) -> Self {
                     let mut cur: usize = 0;
                     #(
-                        let len = <#ty2>::byte_len();
+                        let len = <#ty2>::BYTE_LEN;
                         let #ident2 = <#ty3>::#read_bytes_fn(&bytes[cur .. (cur + len)]);
                         cur += len;
                     )*
@@ -77,11 +77,7 @@ fn byte_struct_macro_derive_impl(input: TokenStream, endianness: Endianness) -> 
             }
 
             impl ByteStructImpl for #name {
-                fn byte_len() -> usize {
-                    let mut cur: usize = 0;
-                    #(cur += <#ty0>::byte_len();)*
-                    cur
-                }
+                const BYTE_LEN: usize = #(<#ty0>::BYTE_LEN)+*;
                 fn write_le_bytes(&self, bytes: &mut [u8]) {
                     self.write_bytes(bytes);
                 }

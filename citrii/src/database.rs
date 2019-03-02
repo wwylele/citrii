@@ -377,5 +377,5 @@ pub struct Database {
 
 #[test]
 fn struct_size_test() {
-    assert_eq!(Database::byte_len(), 0x4BD20);
+    assert_eq!(Database::BYTE_LEN, 0x4BD20);
 }

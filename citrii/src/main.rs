@@ -555,7 +555,7 @@ impl Main {
     }
 
     fn on_save(&self) {
-        let mut database_data = vec![0u8; database::Database::byte_len()];
+        let mut database_data = vec![0u8; database::Database::BYTE_LEN];
         self.database.write_bytes(&mut database_data[..]);
         let crc_a = crc::crc16_ninty(&database_data[0 .. 0xC81E]).to_be_bytes();
         database_data[0xC81E .. 0xC820].copy_from_slice(&crc_a);

@@ -6,7 +6,7 @@ pub trait ByteStruct {
 }
 
 pub trait ByteStructImpl {
-    fn byte_len() -> usize;
+    const BYTE_LEN: usize;
     fn write_le_bytes(&self, bytes: &mut [u8]);
     fn read_le_bytes(bytes: &[u8]) -> Self;
     fn write_be_bytes(&self, bytes: &mut [u8]);
@@ -14,7 +14,7 @@ pub trait ByteStructImpl {
 }
 
 impl ByteStructImpl for u8 {
-    fn byte_len() -> usize {1}
+    const BYTE_LEN: usize = 1;
     fn write_le_bytes(&self, bytes: &mut [u8]) {
         bytes.copy_from_slice(&self.clone().to_le_bytes()[..]);
     }
@@ -30,7 +30,7 @@ impl ByteStructImpl for u8 {
 }
 
 impl ByteStructImpl for i8 {
-    fn byte_len() -> usize {1}
+    const BYTE_LEN: usize = 1;
     fn write_le_bytes(&self, bytes: &mut [u8]) {
         bytes.copy_from_slice(&self.clone().to_le_bytes()[..]);
     }
@@ -46,7 +46,7 @@ impl ByteStructImpl for i8 {
 }
 
 impl ByteStructImpl for u16 {
-    fn byte_len() -> usize {2}
+    const BYTE_LEN: usize = 2;
     fn write_le_bytes(&self, bytes: &mut [u8]) {
         bytes.copy_from_slice(&self.clone().to_le_bytes()[..]);
     }
@@ -62,7 +62,7 @@ impl ByteStructImpl for u16 {
 }
 
 impl ByteStructImpl for i16 {
-    fn byte_len() -> usize {2}
+    const BYTE_LEN: usize = 2;
     fn write_le_bytes(&self, bytes: &mut [u8]) {
         bytes.copy_from_slice(&self.clone().to_le_bytes()[..]);
     }
@@ -78,7 +78,7 @@ impl ByteStructImpl for i16 {
 }
 
 impl ByteStructImpl for u32 {
-    fn byte_len() -> usize {4}
+    const BYTE_LEN: usize = 4;
     fn write_le_bytes(&self, bytes: &mut [u8]) {
         bytes.copy_from_slice(&self.clone().to_le_bytes()[..]);
     }
@@ -94,7 +94,7 @@ impl ByteStructImpl for u32 {
 }
 
 impl ByteStructImpl for i32 {
-    fn byte_len() -> usize {4}
+    const BYTE_LEN: usize = 4;
     fn write_le_bytes(&self, bytes: &mut [u8]) {
         bytes.copy_from_slice(&self.clone().to_le_bytes()[..]);
     }
@@ -112,10 +112,10 @@ impl ByteStructImpl for i32 {
 macro_rules! byte_struct_array {
     ($x:expr) => {
         impl<T: ByteStructImpl + Copy + Default> ByteStructImpl for [T; $x] {
-            fn byte_len() -> usize {($x) * T::byte_len()}
+            const BYTE_LEN: usize = ($x) * T::BYTE_LEN;
             fn write_le_bytes(&self, bytes: &mut [u8]) {
                 let mut pos = 0;
-                let len = T::byte_len();
+                let len = T::BYTE_LEN;
                 for i in 0 .. ($x) {
                     self[i].write_le_bytes(&mut bytes[pos .. pos + len]);
                     pos += len;
@@ -123,7 +123,7 @@ macro_rules! byte_struct_array {
             }
             fn read_le_bytes(bytes: &[u8]) -> Self {
                 let mut pos = 0;
-                let len = T::byte_len();
+                let len = T::BYTE_LEN;
                 let mut result = [T::default(); $x];
                 for i in 0 .. ($x) {
                     result[i] = <T>::read_le_bytes(&bytes[pos .. pos + len]);
@@ -133,7 +133,7 @@ macro_rules! byte_struct_array {
             }
             fn write_be_bytes(&self, bytes: &mut [u8]) {
                 let mut pos = 0;
-                let len = T::byte_len();
+                let len = T::BYTE_LEN;
                 for i in 0 .. ($x) {
                     self[i].write_be_bytes(&mut bytes[pos .. pos + len]);
                     pos += len;
@@ -141,7 +141,7 @@ macro_rules! byte_struct_array {
             }
             fn read_be_bytes(bytes: &[u8]) -> Self {
                 let mut pos = 0;
-                let len = T::byte_len();
+                let len = T::BYTE_LEN;
                 let mut result = [T::default(); $x];
                 for i in 0 .. ($x) {
                     result[i] = <T>::read_be_bytes(&bytes[pos .. pos + len]);
@@ -196,9 +196,7 @@ macro_rules! bitfields{
         }
 
         impl ByteStructImpl for $name {
-            fn byte_len() -> usize {
-                <$base>::byte_len()
-            }
+            const BYTE_LEN: usize = <$base>::BYTE_LEN;
             fn write_le_bytes(&self, bytes: &mut [u8]) {
                 self.to_raw().write_le_bytes(bytes);
             }
@@ -243,7 +241,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        assert_eq!(TestStruct::byte_len(), 15);
+        assert_eq!(TestStruct::BYTE_LEN, 15);
         let mut data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         let mut s = TestStruct {
             a: 0x12,
