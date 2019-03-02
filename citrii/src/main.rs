@@ -67,6 +67,7 @@ const ID_SCALE_INC: u32 = 209;
 const ID_Y_SCALE_DEC: u32 = 210;
 const ID_Y_SCALE_INC: u32 = 211;
 const ID_PALETTE: u32 = 300;
+const ID_EXTRA_FOLD: u32 = 400;
 
 enum Delta {
     Inc,
@@ -138,6 +139,20 @@ struct Main {
     button_scale_inc: Rc<RefCell<ui::Button>>,
     button_y_scale_dec: Rc<RefCell<ui::Button>>,
     button_y_scale_inc: Rc<RefCell<ui::Button>>,
+
+    edit_name: Rc<RefCell<ui::TextEdit>>,
+    edit_author: Rc<RefCell<ui::TextEdit>>,
+    edit_width: Rc<RefCell<ui::TextEdit>>,
+    edit_height: Rc<RefCell<ui::TextEdit>>,
+    edit_birthday_month: Rc<RefCell<ui::TextEdit>>,
+    edit_birthday_day: Rc<RefCell<ui::TextEdit>>,
+    check_favorite: Rc<RefCell<ui::CheckBox>>,
+    check_share: Rc<RefCell<ui::CheckBox>>,
+    check_copy: Rc<RefCell<ui::CheckBox>>,
+    check_male: Rc<RefCell<ui::CheckBox>>,
+    check_female: Rc<RefCell<ui::CheckBox>>,
+    palette_favorite_color: Rc<RefCell<ui::Palette>>,
+    layout_extra: Rc<RefCell<ui::GridLayout>>,
 }
 
 impl Main {
@@ -176,6 +191,8 @@ impl Main {
         let database_data = std::fs::read(database_filename).expect("Unable to read CFL_Res.dat");
         let crc_a = crc::crc16_ninty(&database_data[0 .. 0xC81E]);
         assert_eq!(crc_a, u16::from_be_bytes([database_data[0xC81E], database_data[0xC81F]]));
+        let crc_b = crc::crc16_ninty(&database_data[0xC820 .. 0xE4BE]);
+        assert_eq!(crc_b, u16::from_be_bytes([database_data[0xE4BE], database_data[0xE4BF]]));
         let database = database::Database::read_bytes(&database_data[..]);
 
         let rect_renderer = std::rc::Rc::new(rect_renderer::RectRenderer::new());
@@ -194,7 +211,7 @@ impl Main {
 
         let layout_pages = ui::GridLayout::new(1, PAGE_END as usize,
             page_buttons.iter().map(|b|-> Rc<RefCell<dyn ui::UIElement>> {b.clone()}).collect(),
-            0.02, 0.02, 0.02, 0.02, 0.01, 0.01);
+            0.02, 0.02, 0.02, 0.02, 0.01, 0.01, rect_renderer.clone());
         let docker_pages = ui::Docker::new(layout_pages, ui::XAlign::Left, ui::YAlign::Top);
 
         let button_style_dec = ui::Button::new(ID_STYLE_DEC, 0.1, 0.1,
@@ -208,12 +225,12 @@ impl Main {
             text_renderer.clone());
 
         let button_y_dec = ui::Button::new(ID_Y_DEC, 0.1, 0.1,
-            ui::ButtonContent::from_image(include_bytes!("icon/down.png")),
+            ui::ButtonContent::from_image(include_bytes!("icon/up.png")),
             rect_renderer.clone(),
             text_renderer.clone());
 
         let button_y_inc = ui::Button::new(ID_Y_INC, 0.1, 0.1,
-            ui::ButtonContent::from_image(include_bytes!("icon/up.png")),
+            ui::ButtonContent::from_image(include_bytes!("icon/down.png")),
             rect_renderer.clone(),
             text_renderer.clone());
 
@@ -238,12 +255,12 @@ impl Main {
             text_renderer.clone());
 
         let button_rotation_dec = ui::Button::new(ID_ROTATION_DEC, 0.1, 0.1,
-            ui::ButtonContent::from_image(include_bytes!("icon/rotate-up.png")),
+            ui::ButtonContent::from_image(include_bytes!("icon/rotate-down.png")),
             rect_renderer.clone(),
             text_renderer.clone());
 
         let button_rotation_inc = ui::Button::new(ID_ROTATION_INC, 0.1, 0.1,
-            ui::ButtonContent::from_image(include_bytes!("icon/rotate-down.png")),
+            ui::ButtonContent::from_image(include_bytes!("icon/rotate-up.png")),
             rect_renderer.clone(),
             text_renderer.clone());
 
@@ -275,17 +292,105 @@ impl Main {
             button_y_scale_inc.clone(), button_y_scale_dec.clone(),
             button_rotation_dec.clone(), button_rotation_inc.clone(),
             button_scale_inc.clone(), button_scale_dec.clone(),
-        ], 0.02, 0.02, 0.02, 0.02, 0.01, 0.01);
+        ], 0.02, 0.02, 0.02, 0.02, 0.01, 0.01, rect_renderer.clone());
 
-        let palette = ui::Palette::new(ID_PALETTE, 0.07, rect_renderer.clone());
+        let palette = ui::Palette::new(ID_PALETTE, 0.07, 1, rect_renderer.clone());
 
         let layout_controls_ex = ui::GridLayout::new(2, 1, vec![
             palette.clone(), layout_controls
-        ], 0.02, 0.02, 0.02, 0.02, 0.01, 0.01);
+        ], 0.02, 0.02, 0.02, 0.02, 0.01, 0.01, rect_renderer.clone());
 
         let docker_controls = ui::Docker::new(layout_controls_ex, ui::XAlign::Right, ui::YAlign::Top);
 
-        let scene = ui::Scene::new(vec![docker_pages, docker_controls]);
+        let label_name = ui::Label::new(0.2, 0.04, "Name", text_renderer.clone());
+        let edit_name = ui::TextEdit::new(0.3, 0.04, rect_renderer.clone(), text_renderer.clone());
+        let layout_name = ui::GridLayout::new(2, 1, vec![label_name, edit_name.clone()],
+            0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
+
+        let label_author = ui::Label::new(0.2, 0.04, "Author", text_renderer.clone());
+        let edit_author = ui::TextEdit::new(0.3, 0.04, rect_renderer.clone(), text_renderer.clone());
+        let layout_author = ui::GridLayout::new(2, 1, vec![label_author, edit_author.clone()],
+            0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
+
+        let label_width = ui::Label::new(0.2, 0.04, "Width", text_renderer.clone());
+        let edit_width = ui::TextEdit::new(0.2, 0.04, rect_renderer.clone(), text_renderer.clone());
+        let layout_width = ui::GridLayout::new(2, 1, vec![label_width, edit_width.clone()],
+            0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
+
+        let label_height = ui::Label::new(0.2, 0.04, "Height", text_renderer.clone());
+        let edit_height = ui::TextEdit::new(0.2, 0.04, rect_renderer.clone(), text_renderer.clone());
+        let layout_height = ui::GridLayout::new(2, 1, vec![label_height, edit_height.clone()],
+            0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
+
+        let label_birthday = ui::Label::new(0.2, 0.04, "Birthday", text_renderer.clone());
+        let label_birthday_month = ui::Label::new(0.1, 0.02, "Month", text_renderer.clone());
+        let label_birthday_day = ui::Label::new(0.1, 0.02, "Day", text_renderer.clone());
+        let edit_birthday_month = ui::TextEdit::new(0.1, 0.04, rect_renderer.clone(), text_renderer.clone());
+        let edit_birthday_day = ui::TextEdit::new(0.1, 0.04, rect_renderer.clone(), text_renderer.clone());
+        let layout_birthday_right = ui::GridLayout::new(2, 2,
+            vec![label_birthday_month, label_birthday_day,
+                edit_birthday_month.clone(), edit_birthday_day.clone()],
+                0.0, 0.0, 0.0, 0.0, 0.01, 0.01, rect_renderer.clone());
+        let layout_birthday = ui::GridLayout::new(2, 1,
+            vec![label_birthday, layout_birthday_right],
+            0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
+
+        let image_unchecked = Rc::new(texture::Texture::from_png(include_bytes!("icon/uncheckbox.png")));
+        let image_checked = Rc::new(texture::Texture::from_png(include_bytes!("icon/checkbox.png")));
+
+        let label_favorite = ui::Label::new(0.3, 0.04, "Favorite", text_renderer.clone());
+        let check_favorite = ui::CheckBox::new(0, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
+        let layout_favorite = ui::GridLayout::new(2, 1, vec![label_favorite, check_favorite.clone()],
+            0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
+
+        let label_share = ui::Label::new(0.3, 0.04, "Allow share", text_renderer.clone());
+        let check_share = ui::CheckBox::new(0, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
+        let layout_share = ui::GridLayout::new(2, 1, vec![label_share, check_share.clone()],
+            0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
+
+        let label_copy = ui::Label::new(0.3, 0.04, "Allow copy", text_renderer.clone());
+        let check_copy = ui::CheckBox::new(0, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
+        let layout_copy = ui::GridLayout::new(2, 1, vec![label_copy, check_copy.clone()],
+            0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
+
+        let label_gender = ui::Label::new(0.3, 0.04, "Male / Female", text_renderer.clone());
+        let check_male = ui::CheckBox::new(0, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
+        let check_female = ui::CheckBox::new(0, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
+        let layout_gender = ui::GridLayout::new(3, 1,
+            vec![check_male.clone(), label_gender, check_female.clone()],
+            0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
+
+        let label_favorite_color = ui::Label::new(0.4, 0.04, "Favorite color", text_renderer.clone());
+        let palette_favorite_color = ui::Palette::new(0, 0.07, 6, rect_renderer.clone());
+        palette_favorite_color.borrow_mut().set_colors(color::WEARING_COLOR_TABLE.to_vec());
+        let layout_favorite_color = ui::GridLayout::new(1, 2,
+            vec![label_favorite_color, palette_favorite_color.clone()],
+            0.0, 0.0, 0.02, 0.0, 0.0, 0.01, rect_renderer.clone());
+
+        let layout_extra = ui::GridLayout::new(1, 10, vec![
+            layout_name,
+            layout_author,
+            layout_width,
+            layout_height,
+            layout_birthday,
+            layout_favorite,
+            layout_share,
+            layout_copy,
+            layout_gender,
+            layout_favorite_color,
+            ], 0.0, 0.0, 0.02, 0.02, 0.01, 0.01, rect_renderer.clone());
+        layout_extra.borrow_mut().set_color((0.8, 0.8, 1.0, 0.8));
+
+        let button_extra = ui::Button::new(ID_EXTRA_FOLD, 0.07, 0.07,
+            ui::ButtonContent::from_image(include_bytes!("icon/edit.png")),
+            rect_renderer.clone(),
+            text_renderer.clone());
+        let layout_extra_ex = ui::GridLayout::new(1, 2, vec![layout_extra.clone(), button_extra],
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, rect_renderer.clone());
+        layout_extra.borrow_mut().set_visible(false);
+        let docker_extra = ui::Docker::new(layout_extra_ex, ui::XAlign::Center, ui::YAlign::Top);
+
+        let scene = ui::Scene::new(vec![docker_pages, docker_controls, docker_extra]);
 
         Main {
             gl_window,
@@ -311,11 +416,41 @@ impl Main {
             button_scale_inc,
             button_y_scale_dec,
             button_y_scale_inc,
+            edit_name,
+            edit_author,
+            edit_width,
+            edit_height,
+            edit_birthday_month,
+            edit_birthday_day,
+            check_favorite,
+            check_share,
+            check_copy,
+            check_male,
+            check_female,
+            palette_favorite_color,
+            layout_extra,
         }
     }
 
+    fn update_profile_extra(&self) {
+        let profile_ex = self.database.owned[self.profile_index];
+        let profile = &profile_ex.main;
+        self.edit_name.borrow_mut().set_text(String::from_utf16_lossy(&profile.name[..]));
+        self.edit_author.borrow_mut().set_text(String::from_utf16_lossy(&profile_ex.author[..]));
+        self.edit_birthday_month.borrow_mut().set_text(profile.general.birth_month.to_string());
+        self.edit_birthday_day.borrow_mut().set_text(profile.general.birth_day.to_string());
+        self.edit_width.borrow_mut().set_text(profile.width.to_string());
+        self.edit_height.borrow_mut().set_text(profile.height.to_string());
+        self.check_favorite.borrow_mut().set_checked(profile.general.favorite != 0);
+        self.check_share.borrow_mut().set_checked(profile.face.disable_sharing == 0);
+        self.check_copy.borrow_mut().set_checked(profile.header.allow_copying != 0);
+        self.check_male.borrow_mut().set_checked(profile.general.sex == 0);
+        self.check_female.borrow_mut().set_checked(profile.general.sex != 0);
+        self.palette_favorite_color.borrow_mut().set_selected(profile.general.wearing_color as usize);
+    }
+
     fn on_style_change(&mut self, delta: Delta) {
-        let profile = &mut self.database.owned[self.profile_index];
+        let profile = &mut self.database.owned[self.profile_index].main;
         match self.page {
             PAGE_FACE => wrap_change_value(&mut profile.face.style, 12, delta),
             PAGE_MAKEUP => wrap_change_value(&mut profile.face.makeup, 12, delta),
@@ -334,7 +469,7 @@ impl Main {
     }
 
     fn on_color_change(&mut self, delta: Delta) {
-        let profile = &mut self.database.owned[self.profile_index];
+        let profile = &mut self.database.owned[self.profile_index].main;
         match self.page {
             PAGE_FACE => wrap_change_value(&mut profile.face.color, 6, delta),
             PAGE_HAIR => wrap_change_value(&mut profile.hair.color, 8, delta),
@@ -348,7 +483,7 @@ impl Main {
     }
 
     fn on_color_change_from_palette(&mut self) {
-        let profile = &mut self.database.owned[self.profile_index];
+        let profile = &mut self.database.owned[self.profile_index].main;
         let color = self.palette.borrow().get_selected();
         match self.page {
             PAGE_FACE => profile.face.color = color as u16,
@@ -363,7 +498,7 @@ impl Main {
     }
 
     fn on_scale_change(&mut self, delta: Delta) {
-        let profile = &mut self.database.owned[self.profile_index];
+        let profile = &mut self.database.owned[self.profile_index].main;
         match self.page {
             PAGE_EYEBROW => clamp_change_value(&mut profile.eyebrow.scale, 0, 8, delta),
             PAGE_EYE => clamp_change_value(&mut profile.eye.scale, 0, 7, delta),
@@ -377,7 +512,7 @@ impl Main {
     }
 
     fn on_y_scale_change(&mut self, delta: Delta) {
-        let profile = &mut self.database.owned[self.profile_index];
+        let profile = &mut self.database.owned[self.profile_index].main;
         match self.page {
             PAGE_EYEBROW => clamp_change_value(&mut profile.eyebrow.y_scale, 0, 6, delta),
             PAGE_EYE => clamp_change_value(&mut profile.eye.y_scale, 0, 6, delta),
@@ -387,7 +522,7 @@ impl Main {
     }
 
     fn on_rotation_change(&mut self, delta: Delta) {
-        let profile = &mut self.database.owned[self.profile_index];
+        let profile = &mut self.database.owned[self.profile_index].main;
         match self.page {
             PAGE_EYEBROW => clamp_change_value(&mut profile.eyebrow.rotation, 0, 11, delta),
             PAGE_EYE => clamp_change_value(&mut profile.eye.rotation, 0, 7, delta),
@@ -396,7 +531,7 @@ impl Main {
     }
 
     fn on_x_change(&mut self, delta: Delta) {
-        let profile = &mut self.database.owned[self.profile_index];
+        let profile = &mut self.database.owned[self.profile_index].main;
         match self.page {
             PAGE_EYEBROW => clamp_change_value(&mut profile.eyebrow.x, 0, 12, delta),
             PAGE_EYE => clamp_change_value(&mut profile.eye.x, 0, 12, delta),
@@ -406,7 +541,7 @@ impl Main {
     }
 
     fn on_y_change(&mut self, delta: Delta) {
-        let profile = &mut self.database.owned[self.profile_index];
+        let profile = &mut self.database.owned[self.profile_index].main;
         match self.page {
             PAGE_EYEBROW => clamp_change_value(&mut profile.eyebrow.y, 3, 18, delta),
             PAGE_EYE => clamp_change_value(&mut profile.eye.y, 0, 18, delta),
@@ -470,7 +605,7 @@ impl Main {
         match page {
             PAGE_FACE => {
                 palette.set_colors(color::SKIN_COLOR_TABLE.to_vec());
-                palette.set_selected(profile.face.color as usize);
+                palette.set_selected(profile.main.face.color as usize);
             },
             PAGE_MAKEUP => {
                 palette.set_colors(vec![]);
@@ -480,34 +615,34 @@ impl Main {
             },
             PAGE_HAIR => {
                 palette.set_colors(color::HAIR_COLOR_TABLE.to_vec());
-                palette.set_selected(profile.hair.color as usize);
+                palette.set_selected(profile.main.hair.color as usize);
             },
             PAGE_EYEBROW => {
                 palette.set_colors(color::HAIR_COLOR_TABLE.to_vec());
-                palette.set_selected(profile.eyebrow.color as usize);
+                palette.set_selected(profile.main.eyebrow.color as usize);
             },
             PAGE_EYE => {
                 palette.set_colors(color::EYE_COLOR_TABLE.to_vec());
-                palette.set_selected(profile.eye.color as usize);
+                palette.set_selected(profile.main.eye.color as usize);
             },
             PAGE_NOSE => {
                 palette.set_colors(vec![]);
             },
             PAGE_LIP => {
                 palette.set_colors(color::LIP_COLOR_TABLE.to_vec());
-                palette.set_selected(profile.lip.color as usize);
+                palette.set_selected(profile.main.lip.color as usize);
             },
             PAGE_GLASS => {
                 palette.set_colors(color::GLASS_COLOR_TABLE.to_vec());
-                palette.set_selected(profile.glass.color as usize);
+                palette.set_selected(profile.main.glass.color as usize);
             },
             PAGE_MUSTACHE => {
                 palette.set_colors(color::HAIR_COLOR_TABLE.to_vec());
-                palette.set_selected(profile.hair.color as usize);
+                palette.set_selected(profile.main.hair.color as usize);
             },
             PAGE_BEARD => {
                 palette.set_colors(color::HAIR_COLOR_TABLE.to_vec());
-                palette.set_selected(profile.hair.color as usize);
+                palette.set_selected(profile.main.hair.color as usize);
             },
             PAGE_MOLE => {
                 palette.set_colors(vec![]);
@@ -534,6 +669,10 @@ impl Main {
                 ID_Y_SCALE_DEC => self.on_y_scale_change(Delta::Dec),
                 ID_Y_SCALE_INC => self.on_y_scale_change(Delta::Inc),
                 ID_PALETTE => self.on_color_change_from_palette(),
+                ID_EXTRA_FOLD => {
+                    let visible = self.layout_extra.borrow().get_visible();
+                    self.layout_extra.borrow_mut().set_visible(!visible);
+                }
                 _ => {
                     if event.id >= ID_PAGE_BUTTON_BEGIN && event.id < ID_PAGE_BUTTON_END {
                         self.on_page_change((event.id - ID_PAGE_BUTTON_BEGIN) as u8);
@@ -547,6 +686,7 @@ impl Main {
 
     fn run (&mut self, events_loop: &mut glutin::EventsLoop) {
         self.on_page_change(0);
+        self.update_profile_extra();
 
         let mut rotate = 0.0;
         let mut running = true;
@@ -688,7 +828,7 @@ impl Main {
                 gl::Enable(gl::DEPTH_TEST);
             }
 
-            let info = self.database.owned[self.profile_index].to_render_info();
+            let info = self.database.owned[self.profile_index].main.to_render_info();
 
             let object_tran = cgmath::Matrix4::from_angle_y(cgmath::Deg(rotate));
 

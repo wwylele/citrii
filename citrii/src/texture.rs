@@ -39,6 +39,17 @@ impl Texture {
         Texture{handle}
     }
 
+    pub fn from_png(data: &[u8]) -> Texture {
+        if let Ok(image::DynamicImage::ImageRgba8(image_buffer)) = image::load_from_memory(data) {
+            let width = image_buffer.width() as usize;
+            let height = image_buffer.height() as usize;
+            Texture::new(width, height, &image_buffer.into_raw(),
+                &WrapMode::Edge, &WrapMode::Edge)
+        } else {
+            panic!("broken font image")
+        }
+    }
+
     pub fn bind(&self, unit: u32) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + unit);

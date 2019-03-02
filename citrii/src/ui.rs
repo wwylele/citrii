@@ -36,6 +36,147 @@ pub trait UIElement {
     }
 }
 
+pub struct Label {
+    w: f32,
+    h: f32,
+    text: String,
+    text_renderer: Rc<text_renderer::TextRenderer>,
+}
+
+impl Label {
+    pub fn new(w: f32, h: f32, text: &str,
+        text_renderer: Rc<text_renderer::TextRenderer>) -> Rc<RefCell<Label>> {
+
+        Rc::new(RefCell::new(Label{
+            w, h, text: String::from(text), text_renderer
+        }))
+    }
+}
+
+impl UIElement for Label {
+    fn get_size(&self) -> (f32, f32) {
+        (self.w, self.h)
+    }
+    fn render(&self, (gl_x0, gl_y0): (f32, f32), (gl_x1, gl_y1): (f32, f32)) {
+        let aspect = (self.w / (gl_x1 - gl_x0)) / (self.h / (gl_y1 - gl_y0));
+        self.text_renderer.render(&self.text, ((gl_x0 + gl_x1) * 0.5, (gl_y0 + gl_y1) * 0.5),
+            gl_y1 - gl_y0, (0.0, 0.0, 0.0), aspect);
+
+    }
+    fn on_mouse_event(&mut self, _event: MouseEvent) -> Vec<UIEvent> {
+        vec![]
+    }
+}
+
+pub struct TextEdit {
+    w: f32,
+    h: f32,
+    text: String,
+    rect_renderer: Rc<rect_renderer::RectRenderer>,
+    text_renderer: Rc<text_renderer::TextRenderer>,
+}
+
+impl TextEdit {
+    pub fn new(w: f32, h: f32, rect_renderer: Rc<rect_renderer::RectRenderer>,
+        text_renderer: Rc<text_renderer::TextRenderer>) -> Rc<RefCell<TextEdit>> {
+        Rc::new(RefCell::new(TextEdit {
+            w, h, text: String::from(""), rect_renderer, text_renderer
+        }))
+    }
+
+    pub fn set_text(&mut self, text: String) {
+        self.text = text;
+    }
+
+    pub fn get_text(&self) -> String {
+        self.text.clone()
+    }
+}
+
+impl UIElement for TextEdit {
+    fn get_size(&self) -> (f32, f32) {
+        (self.w, self.h)
+    }
+    fn render(&self, (gl_x0, gl_y0): (f32, f32), (gl_x1, gl_y1): (f32, f32)) {
+        let aspect = (self.w / (gl_x1 - gl_x0)) / (self.h / (gl_y1 - gl_y0));
+        self.text_renderer.render(&self.text, ((gl_x0 + gl_x1) * 0.5, (gl_y0 + gl_y1) * 0.5),
+            gl_y1 - gl_y0, (0.0, 0.0, 0.0), aspect);
+
+    }
+    fn on_mouse_event(&mut self, _event: MouseEvent) -> Vec<UIEvent> {
+        vec![]
+    }
+}
+
+pub struct CheckBox {
+    id: u32,
+    width: f32,
+    image_unchecked: Rc<texture::Texture>,
+    image_checked: Rc<texture::Texture>,
+    rect_renderer: Rc<rect_renderer::RectRenderer>,
+    checked: bool,
+    cursor_in: bool,
+}
+
+impl CheckBox {
+    pub fn new(id: u32, width: f32,
+        image_unchecked: Rc<texture::Texture>,
+        image_checked: Rc<texture::Texture>,
+        rect_renderer: Rc<rect_renderer::RectRenderer>) -> Rc<RefCell<CheckBox>> {
+        Rc::new(RefCell::new(CheckBox{
+            id,
+            width,
+            image_unchecked,
+            image_checked,
+            rect_renderer,
+            checked: false,
+            cursor_in: false,
+        }))
+    }
+
+    pub fn set_checked(&mut self, checked: bool) {
+        self.checked = checked;
+    }
+
+    pub fn get_checked(&self) -> bool {
+        self.checked
+    }
+}
+
+impl UIElement for CheckBox {
+    fn get_size(&self) -> (f32, f32) {
+        (self.width, self.width)
+    }
+    fn render(&self, (gl_x0, gl_y0): (f32, f32), (gl_x1, gl_y1): (f32, f32)) {
+        self.rect_renderer.render(((gl_x0, gl_y0), (gl_x1, gl_y1)),
+            if self.cursor_in
+                {rect_renderer::Filling::Color(1.0, 1.0, 0.5, 0.3)}
+            else
+                {rect_renderer::Filling::Color(1.0, 1.0, 1.0, 0.3)}
+            );
+
+            self.rect_renderer.render(((gl_x0, gl_y0), (gl_x1, gl_y1)),
+                rect_renderer::Filling::Texture(
+                    if self.checked {self.image_checked.as_ref()} else {self.image_unchecked.as_ref()},
+                    ((0.0, 1.0), (1.0, 0.0)), (1.0, 1.0, 1.0)));
+    }
+    fn on_mouse_event(&mut self, event: MouseEvent) -> Vec<UIEvent> {
+        match event {
+            MouseEvent::Entered => {
+                self.cursor_in = true;
+            },
+            MouseEvent::Left => {
+                self.cursor_in = false;
+            }
+            MouseEvent::Pressed => {
+                return vec![UIEvent{id: self.id}]
+            }
+            _ => ()
+        }
+        vec![]
+    }
+}
+
 pub enum ButtonContent {
     Text(String),
     Image(texture::Texture),
@@ -47,16 +188,7 @@ impl ButtonContent {
     }
 
     pub fn from_image(data: &[u8]) -> ButtonContent {
-        if let Ok(image::DynamicImage::ImageRgba8(image_buffer)) = image::load_from_memory(data) {
-            let width = image_buffer.width() as usize;
-            let height = image_buffer.height() as usize;
-            ButtonContent::Image(texture::Texture::new(width, height, &image_buffer.into_raw(),
-                &texture::WrapMode::Edge, &texture::WrapMode::Edge))
-        } else {
-            panic!("broken font image");
-        }
-
-
+        ButtonContent::Image(texture::Texture::from_png(data))
     }
 }
 
@@ -118,7 +250,7 @@ impl UIElement for Button {
             },
             ButtonContent::Image(ref image) => {
                 self.rect_renderer.render(((gl_x0, gl_y0), (gl_x1, gl_y1)),
-                    rect_renderer::Filling::Texture(&image, ((0.0, 0.0), (1.0, 1.0)), (1.0, 1.0, 1.0)));
+                    rect_renderer::Filling::Texture(&image, ((0.0, 1.0), (1.0, 0.0)), (1.0, 1.0, 1.0)));
             },
         }
 
@@ -140,11 +272,10 @@ impl UIElement for Button {
     }
 }
 
-
-
 pub struct Palette {
     id: u32,
     width: f32,
+    horizontal_count: usize,
     selected: usize,
     cursor_in: Option<usize>,
     colors: Vec<(u8, u8, u8)>,
@@ -153,20 +284,15 @@ pub struct Palette {
 }
 
 impl Palette {
-    pub fn new(id: u32, width: f32, rect_renderer: Rc<rect_renderer::RectRenderer>) -> Rc<RefCell<Palette>> {
-        let texture = if let Ok(image::DynamicImage::ImageRgba8(image_buffer)) =
-            image::load_from_memory(include_bytes!("icon/white-square.png")) {
-            let width = image_buffer.width() as usize;
-            let height = image_buffer.height() as usize;
-            texture::Texture::new(width, height, &image_buffer.into_raw(),
-                &texture::WrapMode::Edge, &texture::WrapMode::Edge)
-        } else {
-            panic!("broken font image");
-        };
+    pub fn new(id: u32, width: f32, horizontal_count: usize,
+        rect_renderer: Rc<rect_renderer::RectRenderer>) -> Rc<RefCell<Palette>> {
+
+        let texture = texture::Texture::from_png(include_bytes!("icon/white-square.png"));
 
         Rc::new(RefCell::new(Palette {
             id,
             width,
+            horizontal_count,
             selected: 0,
             cursor_in: None,
             colors: vec![],
@@ -190,15 +316,22 @@ impl Palette {
 
 impl UIElement for Palette {
     fn get_size(&self) -> (f32, f32) {
-        (self.width, self.width * self.colors.len() as f32)
+        (self.width * self.horizontal_count as f32,
+        self.width * (self.colors.len() / self.horizontal_count) as f32)
     }
     fn render(&self, (gl_x0, gl_y0): (f32, f32), (gl_x1, gl_y1): (f32, f32)) {
-        let height = (gl_y1 - gl_y0) / self.colors.len() as f32;
+        let vertical_count = self.colors.len() / self.horizontal_count;
+        let width = (gl_x1 - gl_x0) / self.horizontal_count as f32;
+        let height = (gl_y1 - gl_y0) / vertical_count as f32;
         for i in 0 .. self.colors.len() {
-            let y0 = gl_y0 + height * (self.colors.len() - i - 1) as f32;
+            let cx = i % self.horizontal_count;
+            let cy = i / self.horizontal_count;
+            let y0 = gl_y0 + height * (vertical_count - cy - 1) as f32;
             let y1 = y0 + height;
+            let x0 = gl_x0 + width * cx as f32;
+            let x1 = x0 + width;
 
-            self.rect_renderer.render(((gl_x0, y0), (gl_x1, y1)),
+            self.rect_renderer.render(((x0, y0), (x1, y1)),
             if self.selected == i
                 {rect_renderer::Filling::Color(1.0, 0.5, 0.5, 0.3)}
             else if self.cursor_in == Some(i)
@@ -207,10 +340,9 @@ impl UIElement for Palette {
                 {rect_renderer::Filling::Color(1.0, 1.0, 1.0, 0.3)}
             );
 
-            self.rect_renderer.render(((gl_x0, y0), (gl_x1, y1)),
-                rect_renderer::Filling::Texture(&self.square_texture, ((0.0, 0.0), (1.0, 1.0)),
+            self.rect_renderer.render(((x0, y0), (x1, y1)),
+                rect_renderer::Filling::Texture(&self.square_texture, ((0.0, 1.0), (1.0, 0.0)),
                 color::convert_color(&self.colors[i])))
-
         }
 
     }
@@ -225,12 +357,17 @@ impl UIElement for Palette {
                 }
                 return vec![UIEvent{id: self.id}]
             }
-            MouseEvent::Moved(_x, y) => {
-                let mut i = y / self.width;
-                if i < 0.0 { i = 0.0; }
-                let max = (self.colors.len() - 1) as f32;
-                if i > max { i = max; }
-                self.cursor_in = Some(i as usize);
+            MouseEvent::Moved(x, y) => {
+                let vertical_count = self.colors.len() / self.horizontal_count;
+                let mut cy = y / self.width;
+                let mut cx = x / self.width;
+                if cx < 0.0 { cx = 0.0; }
+                if cy < 0.0 { cy = 0.0; }
+                let cxmax = (self.horizontal_count - 1) as f32;
+                if cx > cxmax { cx = cxmax; }
+                let cymax = (vertical_count - 1) as f32;
+                if cy > cymax { cy = cymax; }
+                self.cursor_in = Some(cx as usize + cy as usize * self.horizontal_count);
             }
             _ => ()
         }
@@ -248,12 +385,16 @@ pub struct GridLayout {
     yb_margin: f32,
     x_gap: f32,
     y_gap: f32,
+    rect_renderer: Rc<rect_renderer::RectRenderer>,
     cursor_in: Option<usize>,
+    visible: bool,
+    color: Option<(f32, f32, f32, f32)>,
 }
 
 impl GridLayout {
     pub fn new(x_count: usize, y_count: usize, children: Vec<Rc<RefCell<dyn UIElement>>>,
-        xl_margin: f32, xr_margin: f32, yt_margin: f32, yb_margin: f32, x_gap: f32, y_gap: f32)
+        xl_margin: f32, xr_margin: f32, yt_margin: f32, yb_margin: f32, x_gap: f32, y_gap: f32,
+        rect_renderer: Rc<rect_renderer::RectRenderer>)
         -> Rc<RefCell<GridLayout>> {
         assert_eq!(x_count * y_count, children.len());
         Rc::new(RefCell::new(GridLayout {
@@ -266,8 +407,23 @@ impl GridLayout {
             yb_margin,
             x_gap,
             y_gap,
+            rect_renderer,
             cursor_in: None,
+            visible: true,
+            color: None,
         }))
+    }
+
+    pub fn set_color(&mut self, color: (f32, f32, f32, f32)) {
+        self.color = Some(color);
+    }
+
+    pub fn set_visible(&mut self, visible: bool) {
+        self.visible = visible;
+    }
+
+    pub fn get_visible(&self) -> bool {
+        self.visible
     }
 
     fn get_grid_size(&self) -> (Vec<f32>, Vec<f32>) {
@@ -286,6 +442,9 @@ impl GridLayout {
 
 impl UIElement for GridLayout {
     fn get_size(&self) -> (f32, f32) {
+        if !self.visible {
+            return (0.0, 0.0);
+        }
         let w_base = self.xl_margin + self.xr_margin + self.x_gap * (self.x_count - 1) as f32;
         let h_base = self.yt_margin + self.yb_margin + self.y_gap * (self.y_count - 1) as f32;
         let (ws, hs) = self.get_grid_size();
@@ -293,7 +452,14 @@ impl UIElement for GridLayout {
         (w_base + ws.iter().fold(0.0, |acc, a|acc + a), h_base + hs.iter().fold(0.0, |acc, a|acc + a))
     }
     fn render(&self, (gl_x0, gl_y0): (f32, f32), (gl_x1, gl_y1): (f32, f32)) {
-        // TODO: draw self
+        if !self.visible {
+            return;
+        }
+
+        if let Some((r, g, b, a)) = self.color {
+            self.rect_renderer.render(((gl_x0, gl_y0), (gl_x1, gl_y1)),
+                rect_renderer::Filling::Color(r, g, b, a));
+        }
 
         let (w, h) = self.get_size();
         let w_ui_to_gl = (gl_x1 - gl_x0) / w;

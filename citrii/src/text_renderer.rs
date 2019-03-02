@@ -38,7 +38,7 @@ impl TextRenderer {
         let mut x_min = x - width * 0.5;
 
         for c in text.chars() {
-            let code: u8 = if c.len_utf8() == 1 || c.is_ascii_control() {
+            let code: u8 = if c.len_utf8() == 1 && !c.is_ascii_control() {
                 let mut buf = [0];
                 c.encode_utf8(&mut buf);
                 buf[0]

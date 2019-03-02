@@ -3,29 +3,29 @@ use crate::color::*;
 use byte_struct::*;
 
 bitfields!(
-    ProfileHeader: u32 {
-        catagory: 8,
-        allow_copying: 1,
-        a: 1,
-        b: 2,
-        c: 2,
-        d: 2,
+    pub ProfileHeader: u32 {
+        pub three: 8, // always 3?
+        pub allow_copying: 1,
+        pub private_name: 1,
+        pub region_lock: 2, // 0 - No lock, 1 - JPN, 2 - USA, 3 - EUR
+        pub char_set: 2, // 0 - Standard, 1 - CHN, 2 - KOR, 3 - TWN
+        padding_a: 2,
 
-        page: 4,
-        slot: 4,
-        g: 4,
-        h: 3,
-        i: 1,
+        pub page: 4,
+        pub slot: 4,
+        pub version_minor: 4, // always 0?
+        pub version_major: 3, // 1 - Wii, 2 - DSi, 3 - 3DS
+        padding_b: 1,
     }
 );
 
 bitfields!(
-    ProfileIdLow: u32 {
-        creation_date: 28,
-        unknown: 1,
-        temporary: 1,
-        ntr: 1,
-        special: 1,
+    pub ProfileIdLow: u32 {
+        pub creation_date: 28,
+        pub unknown: 1,
+        pub temporary: 1,
+        pub ntr: 1,
+        pub normal: 1,
     }
 );
 
@@ -36,113 +36,113 @@ pub struct ProfileId {
 }
 
 bitfields!(
-    ProfileGeneral: u16 { //?
-        sex: 1,
-        birth_day: 4,
-        birth_month: 5,
-        wearing_color: 4,
-        favourate: 1,
+    pub ProfileGeneral: u16 { //?
+        pub sex: 1,
+        pub birth_day: 4,
+        pub birth_month: 5,
+        pub wearing_color: 4,
+        pub favorite: 1,
         padding: 1,
     }
 );
 
 bitfields!(
-    ProfileFace: u16 { // 0x30
-        disable_sharing: 1, // ?
-        style: 4,
-        color: 3,
-        wrinkle: 4,
-        makeup: 4,
+    pub ProfileFace: u16 { // 0x30
+        pub disable_sharing: 1, // ?
+        pub style: 4,
+        pub color: 3,
+        pub wrinkle: 4,
+        pub makeup: 4,
     }
 );
 
 bitfields!(
-    ProfileHair: u16 { // 0x32
-        style: 8,
-        color: 4,
-        flip: 1,
-        padding: 3,
+    pub ProfileHair: u16 { // 0x32
+        pub style: 8,
+        pub color: 3,
+        pub flip: 1,
+        padding: 4,
     }
 );
 
 bitfields!(
-    ProfileEye: u32 { // 0x34
-        style: 6,
-        color: 3,
-        scale: 4,
-        y_scale: 3,
-        rotation: 5,
-        x: 4,
-        y: 5,
+    pub ProfileEye: u32 { // 0x34
+        pub style: 6,
+        pub color: 3,
+        pub scale: 4,
+        pub y_scale: 3,
+        pub rotation: 5,
+        pub x: 4,
+        pub y: 5,
         padding: 2,
     }
 );
 
 bitfields!(
-    ProfileEyebrow: u32 { // 0x38
-        style: 5,
-        color: 3,
-        scale: 4,
-        y_scale: 3,
+    pub ProfileEyebrow: u32 { // 0x38
+        pub style: 5,
+        pub color: 3,
+        pub scale: 4,
+        pub y_scale: 3,
         padding: 1,
-        rotation: 5,
-        x: 4,
-        y: 5,
+        pub rotation: 5,
+        pub x: 4,
+        pub y: 5,
         padding2: 2,
     }
 );
 
 bitfields!(
-    ProfileNose: u16 { // 0x3C
-        style: 5,
-        scale: 4,
-        y: 5,
+    pub ProfileNose: u16 { // 0x3C
+        pub style: 5,
+        pub scale: 4,
+        pub y: 5,
         padding: 2,
     }
 );
 
 bitfields!(
-    ProfileLip: u16 { // 0x3E
-        style: 6,
-        color: 3,
-        scale: 4,
-        y_scale: 3,
+    pub ProfileLip: u16 { // 0x3E
+        pub style: 6,
+        pub color: 3,
+        pub scale: 4,
+        pub y_scale: 3,
     }
 );
 
 bitfields!(
-    ProfileMisc: u16 { // 0x40
-        lip_y: 5,
-        mustache_style: 3,
+    pub ProfileMisc: u16 { // 0x40
+        pub lip_y: 5,
+        pub mustache_style: 3,
         padding: 8
     }
 );
 
 bitfields!(
-    ProfileBeard: u16 { // 0x42
-        style: 3,
-        color: 3,
-        mustache_scale: 4,
-        mustache_y: 5,
+    pub ProfileBeard: u16 { // 0x42
+        pub style: 3,
+        pub color: 3,
+        pub mustache_scale: 4,
+        pub mustache_y: 5,
         padding: 1
     }
 );
 
 bitfields!(
-    ProfileGlass: u16 { // 0x44
-        style: 4,
-        color: 3,
-        scale: 4,
-        y: 5,
+    pub ProfileGlass: u16 { // 0x44
+        pub style: 4,
+        pub color: 3,
+        pub scale: 4,
+        pub y: 5,
     }
 );
 
 bitfields!(
-    Mole: u16 { // 0x46
-        style: 1,
-        scale: 4,
-        x: 5,
-        y: 5,
+    pub Mole: u16 { // 0x46
+        pub style: 1,
+        pub scale: 4,
+        pub x: 5,
+        pub y: 5,
         padding: 1
     }
 );
@@ -167,7 +167,19 @@ pub struct Profile {
     pub beard: ProfileBeard,
     pub glass: ProfileGlass,
     pub mole: Mole,
+}
+
+#[derive(ByteStructLE, Debug, Default, Copy, Clone)]
+pub struct ProfileFull {
+    pub main: Profile,
     pub author: [u16; 10],
+}
+
+#[derive(ByteStructLE, Debug, Default, Copy, Clone)]
+pub struct ProfileAlt {
+    pub main: Profile,
+    pub timestamp: u32, // seconds since 1/1/2000
+    pub unk: [u8; 8],
 }
 
 const EYE_ROTATION_OFFSETS: [u32; 62] = [
@@ -328,18 +340,42 @@ impl Profile {
     }
 }
 
+bitfields!(
+    pub CFHEListNode: u32 {
+        pub prev: 15,
+        pub pf: 1,
+        pub next: 15,
+        pub nf: 1,
+    }
+);
+
+#[derive(ByteStructLE, Debug, Default, Copy, Clone)]
+pub struct CFHEObject {
+    pub profile_id: ProfileId,
+    pub list_node: CFHEListNode,
+}
+
 #[derive(ByteStructLE)]
 pub struct Database {
     pub cfog: [u8; 4],
-    pub magic: u32,
-    pub owned: [Profile; 100],
+    pub magic: u32, // 0x00000100
+    pub owned: [ProfileFull; 100],
     pub cfhe: [u8; 4],
-    pub magic2: u32,
-    pub unk: [[u8; 14]; 3001],
-    pub crc: u16, // actually BE, but we access this field from raw bytes
+    pub cfhe_tail: u16,
+    pub cfhe_head: u16,
+    pub cfhe_objects: [CFHEObject; 3000],
+    pub unk: [u8; 0xE],
+    pub crc_a: u16, // actually BE, but we access this field from raw bytes
+    pub cfra: u32,
+    pub invited_count: u32,
+    pub invited_order: [u8; 100],
+    pub invited: [Profile; 100],
+    pub unk2: [u8; 0x12],
+    pub crc_b: u16,
+    pub cfhe_profiles: [ProfileAlt; 3000],
 }
 
 #[test]
 fn struct_size_test() {
-    assert_eq!(Database::byte_len(), 0xC820);
+    assert_eq!(Database::byte_len(), 0x4BD20);
 }

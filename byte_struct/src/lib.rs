@@ -162,14 +162,14 @@ macro_rules! bsa5 { ($x:expr) => { bsa4!($x); bsa4!(16 + $x);}}
 bsa5!(1);
 
 byte_struct_array!(100);
-byte_struct_array!(3001);
+byte_struct_array!(3000);
 
 #[macro_export]
 macro_rules! bitfields{
-    ($name:ident : $base:ty {$($field_name:ident : $field_len:expr),+ $(,)? }) => {
-        #[derive(PartialEq, Debug, Default, Copy, Clone)]
-        pub struct $name {
-            $(pub $field_name: $base),*
+    ($visibility:vis $name:ident : $base:ty {$($field_vis:vis $field_name:ident : $field_len:expr),+ $(,)? }) => {
+        #[derive(PartialEq, Debug, Default, Copy, Clone, Hash)]
+        $visibility struct $name {
+            $($field_vis $field_name: $base),*
         }
 
         impl $name {
