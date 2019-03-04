@@ -2,6 +2,4 @@
 
 members = [
     "citrii",
-    "byte_struct",
-    "byte_struct_derive",
 ]

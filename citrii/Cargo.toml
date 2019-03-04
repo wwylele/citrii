@@ -10,4 +10,4 @@ gl = "*"
 glutin = "*"
 cgmath = "*"
 image = "*"
-byte_struct = { path = "../byte_struct"}
+byte_struct = "0.2"
