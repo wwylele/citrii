@@ -43,7 +43,7 @@ bitfields!(
         pub sex: 1,
         pub birth_day: 4,
         pub birth_month: 5,
-        pub wearing_color: 4,
+        pub favorite_color: 4,
         pub favorite: 1,
         padding: 1,
     }
@@ -168,8 +168,8 @@ pub struct Profile {
     pub padding: u16,
     pub general: ProfileGeneral,
     pub name: [u16; 10],
-    pub width: u8,
     pub height: u8,
+    pub width: u8,
     pub face: ProfileFace,
     pub hair: ProfileHair,
     pub eye: ProfileEye,
@@ -316,7 +316,7 @@ impl Profile {
             full_hair: true,
 
             hair_color: get_color(&HAIR_COLOR_TABLE, self.hair.color as usize),
-            wearing_color: get_color(&WEARING_COLOR_TABLE, self.general.wearing_color as usize),
+            wearing_color: get_color(&WEARING_COLOR_TABLE, self.general.favorite_color as usize),
             face_color: get_color(&SKIN_COLOR_TABLE, self.face.color as usize),
             beard_color: get_color(&HAIR_COLOR_TABLE, self.beard.color as usize),
             glass_color: get_color(&GLASS_COLOR_TABLE, self.glass.color as usize),

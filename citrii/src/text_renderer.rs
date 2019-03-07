@@ -34,7 +34,7 @@ impl TextRenderer {
         let y_min = y - height * 0.5;
         let y_max = y + height * 0.5;
         let char_width = height / (self.font_height as f32) * (FONT_WIDTH * self.font_width as f32) / aspect;
-        let width = char_width * text.len() as f32;
+        let width = char_width * text.chars().count() as f32;
         let mut x_min = x - width * 0.5;
 
         for c in text.chars() {

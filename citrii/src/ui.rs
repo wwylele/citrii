@@ -375,6 +375,98 @@ impl UIElement for Palette {
     }
 }
 
+pub struct ScrollBar {
+    id: u32,
+    width: f32,
+    height: f32,
+    rect_renderer: Rc<rect_renderer::RectRenderer>,
+
+    value: f32,
+    cursor_in: bool,
+    selected: bool,
+    temp_value: f32,
+}
+
+impl ScrollBar {
+    pub fn new(id: u32, width: f32, height: f32, rect_renderer: Rc<rect_renderer::RectRenderer>)
+        -> Rc<RefCell<ScrollBar>> {
+        Rc::new(RefCell::new(ScrollBar {
+            id,
+            width,
+            height,
+            rect_renderer,
+            value: 0.0,
+            cursor_in: false,
+            selected: false,
+            temp_value: 0.0,
+        }))
+    }
+
+    pub fn get_value(&self) -> f32 {
+        self.value
+    }
+
+    pub fn set_value(&mut self, value: f32) {
+        self.value = value;
+    }
+}
+
+
+impl UIElement for ScrollBar {
+    fn get_size(&self) -> (f32, f32) {
+        (self.width, self.height)
+    }
+
+    fn render(&self, (gl_x0, gl_y0): (f32, f32), (gl_x1, gl_y1): (f32, f32)) {
+        let yc = (gl_y0 + gl_y1) * 0.5;
+        let yh = (gl_y1 - gl_y0) * 0.4;
+        self.rect_renderer.render(((gl_x0, yc - yh), (gl_x1, yc + yh)),
+            if self.selected
+                {rect_renderer::Filling::Color(1.0, 0.5, 0.5, 0.3)}
+            else if self.cursor_in
+                {rect_renderer::Filling::Color(1.0, 1.0, 0.5, 0.3)}
+            else
+                {rect_renderer::Filling::Color(1.0, 1.0, 1.0, 0.3)}
+        );
+
+        let tick_width = self.height * 0.2;
+        let tick_width_gl = tick_width / self.width * (gl_x1 - gl_x0);
+        let tick_pos = gl_x0 + (gl_x1 - gl_x0) * self.value;
+        self.rect_renderer.render(((tick_pos - tick_width_gl, gl_y0), (tick_pos + tick_width_gl, gl_y1)),
+                {rect_renderer::Filling::Color(0.2, 0.2, 0.5, 0.8)});
+
+    }
+
+    fn on_mouse_event(&mut self, event: MouseEvent) -> Vec<UIEvent> {
+        match event {
+            MouseEvent::Entered => {
+                self.cursor_in = true;
+            },
+            MouseEvent::Left => {
+                self.selected = false;
+                self.cursor_in = false;
+            }
+            MouseEvent::Pressed => {
+                self.selected = true;
+                self.value = self.temp_value;
+                return vec![UIEvent{id: self.id}]
+            }
+            MouseEvent::Released => {
+                self.selected = false;
+            }
+            MouseEvent::Moved(x, _) => {
+                self.temp_value = x / self.width;
+                if self.selected {
+                    self.value = self.temp_value;
+                    return vec![UIEvent{id: self.id}]
+                }
+            }
+        }
+        vec![]
+    }
+}
+
+
 pub struct GridLayout {
     x_count: usize,
     y_count: usize,
@@ -529,7 +621,7 @@ impl UIElement for GridLayout {
                     self.cursor_in = current;
                 }
                 if let Some(current) = current {
-                    self.children[current].borrow_mut().on_mouse_event(MouseEvent::Moved(dx, dy));
+                    ui_event.append(&mut self.children[current].borrow_mut().on_mouse_event(MouseEvent::Moved(dx, dy)));
                 }
             },
             MouseEvent::Pressed | MouseEvent::Released => {

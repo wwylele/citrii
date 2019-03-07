@@ -68,6 +68,14 @@ const ID_Y_SCALE_DEC: u32 = 210;
 const ID_Y_SCALE_INC: u32 = 211;
 const ID_PALETTE: u32 = 300;
 const ID_EXTRA_FOLD: u32 = 400;
+const ID_FAVORITE: u32 = 500;
+const ID_SHARE: u32 = 501;
+const ID_COPY: u32 = 502;
+const ID_MALE: u32 = 503;
+const ID_FEMALE: u32 = 504;
+const ID_FAVORITE_COLOR: u32 = 505;
+const ID_WIDTH: u32 = 506;
+const ID_HEIGHT: u32 = 507;
 
 enum Delta {
     Inc,
@@ -142,8 +150,8 @@ struct Main {
 
     edit_name: Rc<RefCell<ui::TextEdit>>,
     edit_author: Rc<RefCell<ui::TextEdit>>,
-    edit_width: Rc<RefCell<ui::TextEdit>>,
-    edit_height: Rc<RefCell<ui::TextEdit>>,
+    scroll_width: Rc<RefCell<ui::ScrollBar>>,
+    scroll_height: Rc<RefCell<ui::ScrollBar>>,
     edit_birthday_month: Rc<RefCell<ui::TextEdit>>,
     edit_birthday_day: Rc<RefCell<ui::TextEdit>>,
     check_favorite: Rc<RefCell<ui::CheckBox>>,
@@ -313,14 +321,14 @@ impl Main {
             0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
 
         let label_width = ui::Label::new(0.2, 0.04, "Width", text_renderer.clone());
-        let edit_width = ui::TextEdit::new(0.2, 0.04, rect_renderer.clone(), text_renderer.clone());
-        let layout_width = ui::GridLayout::new(2, 1, vec![label_width, edit_width.clone()],
-            0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
+        let scroll_width = ui::ScrollBar::new(ID_WIDTH, 0.28, 0.04, rect_renderer.clone());
+        let layout_width = ui::GridLayout::new(2, 1, vec![label_width, scroll_width.clone()],
+            0.0, 0.02, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
 
         let label_height = ui::Label::new(0.2, 0.04, "Height", text_renderer.clone());
-        let edit_height = ui::TextEdit::new(0.2, 0.04, rect_renderer.clone(), text_renderer.clone());
-        let layout_height = ui::GridLayout::new(2, 1, vec![label_height, edit_height.clone()],
-            0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
+        let scroll_height = ui::ScrollBar::new(ID_HEIGHT, 0.28, 0.04, rect_renderer.clone());
+        let layout_height = ui::GridLayout::new(2, 1, vec![label_height, scroll_height.clone()],
+            0.0, 0.02, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
 
         let label_birthday = ui::Label::new(0.2, 0.04, "Birthday", text_renderer.clone());
         let label_birthday_month = ui::Label::new(0.1, 0.02, "Month", text_renderer.clone());
@@ -339,29 +347,29 @@ impl Main {
         let image_checked = Rc::new(texture::Texture::from_png(include_bytes!("icon/checkbox.png")));
 
         let label_favorite = ui::Label::new(0.3, 0.04, "Favorite", text_renderer.clone());
-        let check_favorite = ui::CheckBox::new(0, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
+        let check_favorite = ui::CheckBox::new(ID_FAVORITE, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
         let layout_favorite = ui::GridLayout::new(2, 1, vec![label_favorite, check_favorite.clone()],
             0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
 
         let label_share = ui::Label::new(0.3, 0.04, "Allow share", text_renderer.clone());
-        let check_share = ui::CheckBox::new(0, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
+        let check_share = ui::CheckBox::new(ID_SHARE, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
         let layout_share = ui::GridLayout::new(2, 1, vec![label_share, check_share.clone()],
             0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
 
         let label_copy = ui::Label::new(0.3, 0.04, "Allow copy", text_renderer.clone());
-        let check_copy = ui::CheckBox::new(0, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
+        let check_copy = ui::CheckBox::new(ID_COPY, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
         let layout_copy = ui::GridLayout::new(2, 1, vec![label_copy, check_copy.clone()],
             0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
 
         let label_gender = ui::Label::new(0.3, 0.04, "Male / Female", text_renderer.clone());
-        let check_male = ui::CheckBox::new(0, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
-        let check_female = ui::CheckBox::new(0, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
+        let check_male = ui::CheckBox::new(ID_MALE, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
+        let check_female = ui::CheckBox::new(ID_FEMALE, 0.04, image_unchecked.clone(), image_checked.clone(), rect_renderer.clone());
         let layout_gender = ui::GridLayout::new(3, 1,
             vec![check_male.clone(), label_gender, check_female.clone()],
             0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
 
         let label_favorite_color = ui::Label::new(0.4, 0.04, "Favorite color", text_renderer.clone());
-        let palette_favorite_color = ui::Palette::new(0, 0.07, 6, rect_renderer.clone());
+        let palette_favorite_color = ui::Palette::new(ID_FAVORITE_COLOR, 0.07, 6, rect_renderer.clone());
         palette_favorite_color.borrow_mut().set_colors(color::WEARING_COLOR_TABLE.to_vec());
         let layout_favorite_color = ui::GridLayout::new(1, 2,
             vec![label_favorite_color, palette_favorite_color.clone()],
@@ -370,8 +378,8 @@ impl Main {
         let layout_extra = ui::GridLayout::new(1, 10, vec![
             layout_name,
             layout_author,
-            layout_width,
             layout_height,
+            layout_width,
             layout_birthday,
             layout_favorite,
             layout_share,
@@ -418,8 +426,8 @@ impl Main {
             button_y_scale_inc,
             edit_name,
             edit_author,
-            edit_width,
-            edit_height,
+            scroll_width,
+            scroll_height,
             edit_birthday_month,
             edit_birthday_day,
             check_favorite,
@@ -433,20 +441,31 @@ impl Main {
     }
 
     fn update_profile_extra(&self) {
+        fn name_to_text(name: &[u16]) -> String {
+            let mut end = name.len();
+            for i in 0 .. name.len() {
+                if name[i] == 0 {
+                    end = i;
+                    break;
+                }
+            }
+            String::from_utf16_lossy(&name[0 .. end])
+        }
+
         let profile_ex = self.database.owned[self.profile_index];
         let profile = &profile_ex.main;
-        self.edit_name.borrow_mut().set_text(String::from_utf16_lossy(&profile.name[..]));
-        self.edit_author.borrow_mut().set_text(String::from_utf16_lossy(&profile_ex.author[..]));
+        self.edit_name.borrow_mut().set_text(name_to_text(&profile.name[..]));
+        self.edit_author.borrow_mut().set_text(name_to_text(&profile_ex.author[..]));
         self.edit_birthday_month.borrow_mut().set_text(profile.general.birth_month.to_string());
         self.edit_birthday_day.borrow_mut().set_text(profile.general.birth_day.to_string());
-        self.edit_width.borrow_mut().set_text(profile.width.to_string());
-        self.edit_height.borrow_mut().set_text(profile.height.to_string());
+        self.scroll_width.borrow_mut().set_value(profile.width as f32 / 127.0);
+        self.scroll_height.borrow_mut().set_value(profile.height as f32 / 127.0);
         self.check_favorite.borrow_mut().set_checked(profile.general.favorite != 0);
         self.check_share.borrow_mut().set_checked(profile.face.disable_sharing == 0);
         self.check_copy.borrow_mut().set_checked(profile.header.allow_copying != 0);
         self.check_male.borrow_mut().set_checked(profile.general.sex == 0);
         self.check_female.borrow_mut().set_checked(profile.general.sex != 0);
-        self.palette_favorite_color.borrow_mut().set_selected(profile.general.wearing_color as usize);
+        self.palette_favorite_color.borrow_mut().set_selected(profile.general.favorite_color as usize);
     }
 
     fn on_style_change(&mut self, delta: Delta) {
@@ -673,6 +692,45 @@ impl Main {
                     let visible = self.layout_extra.borrow().get_visible();
                     self.layout_extra.borrow_mut().set_visible(!visible);
                 }
+                ID_FAVORITE => {
+                    let b = &mut self.database.owned[self.profile_index].main.general.favorite;
+                    *b = 1 - *b;
+                    self.update_profile_extra();
+                },
+                ID_SHARE => {
+                    let b = &mut self.database.owned[self.profile_index].main.face.disable_sharing;
+                    *b = 1 - *b;
+                    self.update_profile_extra();
+                },
+                ID_COPY => {
+                    let b = &mut self.database.owned[self.profile_index].main.header.allow_copying;
+                    *b = 1 - *b;
+                    self.update_profile_extra();
+                },
+                ID_MALE => {
+                    self.database.owned[self.profile_index].main.general.sex = 0;
+                    self.update_profile_extra();
+                },
+                ID_FEMALE => {
+                    self.database.owned[self.profile_index].main.general.sex = 1;
+                    self.update_profile_extra();
+                },
+                ID_FAVORITE_COLOR => {
+                    self.database.owned[self.profile_index].main.general.favorite_color =
+                        self.palette_favorite_color.borrow().get_selected() as u16;
+                    self.update_profile_extra();
+                },
+                ID_WIDTH => {
+                    self.database.owned[self.profile_index].main.width =
+                        (self.scroll_width.borrow().get_value() * 127.0).round() as u8;
+                    self.update_profile_extra();
+                }
+                ID_HEIGHT => {
+                    self.database.owned[self.profile_index].main.height =
+                        (self.scroll_height.borrow().get_value() * 127.0).round() as u8;
+                    self.update_profile_extra();
+                }
+
                 _ => {
                     if event.id >= ID_PAGE_BUTTON_BEGIN && event.id < ID_PAGE_BUTTON_END {
                         self.on_page_change((event.id - ID_PAGE_BUTTON_BEGIN) as u8);
