@@ -38,7 +38,7 @@ impl Model {
             gl::GenVertexArrays(1, &mut vao);
             gl::BindVertexArray(vao);
 
-            if vertex.len() != 0 {
+            if !vertex.is_empty() {
                 gl::GenBuffers(1, &mut vbo);
                 gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
                 gl::BufferData(gl::ARRAY_BUFFER,
@@ -47,7 +47,7 @@ impl Model {
                     gl::STATIC_DRAW);
             }
 
-            if index.len() != 0 {
+            if !index.is_empty() {
                 gl::GenBuffers(1, &mut ibo);
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ibo);
                 gl::BufferData(gl::ELEMENT_ARRAY_BUFFER,

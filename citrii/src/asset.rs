@@ -447,7 +447,7 @@ impl Asset {
                 let end = section_header.item_offsets[item_k + 1] & 0x3FFFFF;
                 let item_data = &item_data_chunk[begin as usize .. end as usize];
 
-                if item_data.len() == 0 {
+                if item_data.is_empty() {
                     item_list.push(None);
                     if section == 2 {
                         face_configs.push(None);

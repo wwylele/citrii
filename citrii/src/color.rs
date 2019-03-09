@@ -61,10 +61,10 @@ pub const WEARING_COLOR_TABLE: [(u8, u8, u8); 12] = [
 
 pub const INVALID_COLOR: (u8, u8, u8) = (255, 255, 255);
 
-pub fn convert_color((r, g, b): &(u8, u8, u8)) -> (f32, f32, f32) {
-    (*r as f32 / 255.0, *g as f32 / 255.0, *b as f32 / 255.0)
+pub fn convert_color((r, g, b): (u8, u8, u8)) -> (f32, f32, f32) {
+    (r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0)
 }
 
 pub fn get_color(table: &[(u8, u8, u8)], index: usize) -> (f32, f32, f32) {
-    convert_color(table.get(index).unwrap_or(&INVALID_COLOR))
+    convert_color(*table.get(index).unwrap_or(&INVALID_COLOR))
 }

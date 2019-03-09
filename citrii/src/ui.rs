@@ -149,11 +149,11 @@ impl UIElement for CheckBox {
     }
     fn render(&self, (gl_x0, gl_y0): (f32, f32), (gl_x1, gl_y1): (f32, f32)) {
         self.rect_renderer.render(((gl_x0, gl_y0), (gl_x1, gl_y1)),
-            if self.cursor_in
-                {rect_renderer::Filling::Color(1.0, 1.0, 0.5, 0.3)}
-            else
-                {rect_renderer::Filling::Color(1.0, 1.0, 1.0, 0.3)}
-            );
+            if self.cursor_in {
+                rect_renderer::Filling::Color(1.0, 1.0, 0.5, 0.3)
+            } else {
+                rect_renderer::Filling::Color(1.0, 1.0, 1.0, 0.3)
+            });
 
             self.rect_renderer.render(((gl_x0, gl_y0), (gl_x1, gl_y1)),
                 rect_renderer::Filling::Texture(
@@ -235,13 +235,13 @@ impl UIElement for Button {
         if !self.visible {return}
         let aspect = (self.w / (gl_x1 - gl_x0)) / (self.h / (gl_y1 - gl_y0));
         self.rect_renderer.render(((gl_x0, gl_y0), (gl_x1, gl_y1)),
-            if self.selected
-                {rect_renderer::Filling::Color(1.0, 0.5, 0.5, 0.3)}
-            else if self.cursor_in
-                {rect_renderer::Filling::Color(1.0, 1.0, 0.5, 0.3)}
-            else
-                {rect_renderer::Filling::Color(1.0, 1.0, 1.0, 0.3)}
-            );
+            if self.selected {
+                rect_renderer::Filling::Color(1.0, 0.5, 0.5, 0.3)
+            } else if self.cursor_in {
+                rect_renderer::Filling::Color(1.0, 1.0, 0.5, 0.3)
+            } else {
+                rect_renderer::Filling::Color(1.0, 1.0, 1.0, 0.3)
+            });
 
         match self.content {
             ButtonContent::Text(ref text) => {
@@ -342,7 +342,7 @@ impl UIElement for Palette {
 
             self.rect_renderer.render(((x0, y0), (x1, y1)),
                 rect_renderer::Filling::Texture(&self.square_texture, ((0.0, 1.0), (1.0, 0.0)),
-                color::convert_color(&self.colors[i])))
+                color::convert_color(self.colors[i])))
         }
 
     }

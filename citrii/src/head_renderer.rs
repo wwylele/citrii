@@ -79,11 +79,11 @@ impl HeadRenderer {
     }
 
     pub fn render_head(&self, info: &HeadRenderInfo, object_tran: &cgmath::Matrix4<f32>, aspect: f32) {
-        fn draw_model(list: &Vec<Option<model::Model>>, index: usize) {
+        fn draw_model(list: &[Option<model::Model>], index: usize) {
             list.get(index).and_then(|o|o.as_ref()).map(|m|m.draw());
         };
 
-        fn bind_texture(list: &Vec<Option<texture::Texture>>, index: usize, unit: u32) {
+        fn bind_texture(list: &[Option<texture::Texture>], index: usize, unit: u32) {
             list.get(index).and_then(|o|o.as_ref()).map(|t|t.bind(unit));
         };
 
@@ -131,8 +131,8 @@ impl HeadRenderer {
         };
 
         let set_layers = |configs: [Option<LayerConfig>; 5]| {
-            for layer in 0 .. 5 {
-                match &configs[layer] {
+            for (layer, config) in configs.iter().enumerate() {
+                match &config {
                     None => self.head_shader.set_uniform_mat4(&format!("color_tran[{}]", layer),
                         &cgmath::Matrix4::<f32>::zero()),
                     Some(LayerConfig{texture, tran, window}) => {

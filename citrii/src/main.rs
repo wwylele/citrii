@@ -218,7 +218,7 @@ impl Main {
         }
 
         let layout_pages = ui::GridLayout::new(1, PAGE_END as usize,
-            page_buttons.iter().map(|b|-> Rc<RefCell<dyn ui::UIElement>> {b.clone()}).collect(),
+            page_buttons.iter().cloned().map(|m|->Rc<RefCell<dyn ui::UIElement>>{m}).collect(),
             0.02, 0.02, 0.02, 0.02, 0.01, 0.01, rect_renderer.clone());
         let docker_pages = ui::Docker::new(layout_pages, ui::XAlign::Left, ui::YAlign::Top);
 
@@ -784,7 +784,7 @@ impl Main {
                             window_height = logical_size.height;
                             let dpi_factor = self.gl_window.get_hidpi_factor();
                             let physical = logical_size.to_physical(dpi_factor);
-                            let physical_u32: (u32, u32) = physical.clone().into();
+                            let physical_u32: (u32, u32) = physical.into();
                             aspect = physical_u32.0 as f32 / physical_u32.1 as f32;
                             unsafe {
                                 gl::Viewport(0, 0, physical_u32.0 as GLsizei, physical_u32.1 as GLsizei);

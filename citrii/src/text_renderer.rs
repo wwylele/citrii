@@ -43,7 +43,7 @@ impl TextRenderer {
                 c.encode_utf8(&mut buf);
                 buf[0]
             } else {
-                '?' as u8
+                b'?'
             } - 0x20;
 
             let tex_x = (code % FONT_X_COUNT) as f32 * FONT_WIDTH;
