@@ -36,6 +36,27 @@ pub trait UIElement {
     }
 }
 
+pub struct Placeholder {
+
+}
+
+impl Placeholder {
+    pub fn new() -> Rc<RefCell<Placeholder>> {
+        Rc::new(RefCell::new(Placeholder{}))
+    }
+}
+
+impl UIElement for Placeholder {
+    fn get_size(&self) -> (f32, f32) {
+        (0.0, 0.0)
+    }
+    fn render(&self, _: (f32, f32), _: (f32, f32)) {
+    }
+    fn on_mouse_event(&mut self, _: MouseEvent) -> Vec<UIEvent> {
+        vec![]
+    }
+}
+
 pub struct Label {
     w: f32,
     h: f32,

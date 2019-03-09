@@ -76,6 +76,8 @@ const ID_FEMALE: u32 = 504;
 const ID_FAVORITE_COLOR: u32 = 505;
 const ID_WIDTH: u32 = 506;
 const ID_HEIGHT: u32 = 507;
+const ID_BIRTHMONTH_BEGIN: u32 = 600;
+const ID_BIRTHDAY_BEGIN: u32 = 700;
 
 enum Delta {
     Inc,
@@ -152,14 +154,14 @@ struct Main {
     edit_author: Rc<RefCell<ui::TextEdit>>,
     scroll_width: Rc<RefCell<ui::ScrollBar>>,
     scroll_height: Rc<RefCell<ui::ScrollBar>>,
-    edit_birthday_month: Rc<RefCell<ui::TextEdit>>,
-    edit_birthday_day: Rc<RefCell<ui::TextEdit>>,
     check_favorite: Rc<RefCell<ui::CheckBox>>,
     check_share: Rc<RefCell<ui::CheckBox>>,
     check_copy: Rc<RefCell<ui::CheckBox>>,
     check_male: Rc<RefCell<ui::CheckBox>>,
     check_female: Rc<RefCell<ui::CheckBox>>,
     palette_favorite_color: Rc<RefCell<ui::Palette>>,
+    buttons_birthmonth: Vec<Rc<RefCell<ui::Button>>>,
+    buttons_birthday: Vec<Rc<RefCell<ui::Button>>>,
     layout_extra: Rc<RefCell<ui::GridLayout>>,
 }
 
@@ -330,19 +332,6 @@ impl Main {
         let layout_height = ui::GridLayout::new(2, 1, vec![label_height, scroll_height.clone()],
             0.0, 0.02, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
 
-        let label_birthday = ui::Label::new(0.2, 0.04, "Birthday", text_renderer.clone());
-        let label_birthday_month = ui::Label::new(0.1, 0.02, "Month", text_renderer.clone());
-        let label_birthday_day = ui::Label::new(0.1, 0.02, "Day", text_renderer.clone());
-        let edit_birthday_month = ui::TextEdit::new(0.1, 0.04, rect_renderer.clone(), text_renderer.clone());
-        let edit_birthday_day = ui::TextEdit::new(0.1, 0.04, rect_renderer.clone(), text_renderer.clone());
-        let layout_birthday_right = ui::GridLayout::new(2, 2,
-            vec![label_birthday_month, label_birthday_day,
-                edit_birthday_month.clone(), edit_birthday_day.clone()],
-                0.0, 0.0, 0.0, 0.0, 0.01, 0.01, rect_renderer.clone());
-        let layout_birthday = ui::GridLayout::new(2, 1,
-            vec![label_birthday, layout_birthday_right],
-            0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
-
         let image_unchecked = Rc::new(texture::Texture::from_png(include_bytes!("icon/uncheckbox.png")));
         let image_checked = Rc::new(texture::Texture::from_png(include_bytes!("icon/checkbox.png")));
 
@@ -375,17 +364,46 @@ impl Main {
             vec![label_favorite_color, palette_favorite_color.clone()],
             0.0, 0.0, 0.02, 0.0, 0.0, 0.01, rect_renderer.clone());
 
-        let layout_extra = ui::GridLayout::new(1, 10, vec![
+        let buttons_birthmonth: Vec<Rc<RefCell<ui::Button>>> = (0..13).map(|i|
+                {ui::Button::new(ID_BIRTHMONTH_BEGIN + i, 0.03, 0.03, ui::ButtonContent::Text(i.to_string()),
+                 rect_renderer.clone(), text_renderer.clone())}
+            ).collect();
+
+        let buttons_birthday: Vec<Rc<RefCell<ui::Button>>> = (0..32).map(|i|
+                {ui::Button::new(ID_BIRTHDAY_BEGIN + i, 0.03, 0.03, ui::ButtonContent::Text(i.to_string()),
+                 rect_renderer.clone(), text_renderer.clone())}
+            ).collect();
+
+        let placeholder: Rc<RefCell<dyn ui::UIElement>> = ui::Placeholder::new();
+
+        let layout_birthmonth = ui::GridLayout::new(4, 4,
+            buttons_birthmonth.iter().cloned().map(|m|->Rc<RefCell<dyn ui::UIElement>>{m})
+            .chain(std::iter::repeat(placeholder).take(3)).collect(),
+            0.0, 0.0, 0.0, 0.0, 0.005, 0.005, rect_renderer.clone());
+        let layout_birthday = ui::GridLayout::new(8, 4,
+            buttons_birthday.iter().cloned().map(|m|->Rc<RefCell<dyn ui::UIElement>>{m}).collect(),
+            0.0, 0.0, 0.0, 0.0, 0.005, 0.005, rect_renderer.clone());
+
+        let label_birthday_main = ui::Label::new(0.4, 0.04, "Birthday", text_renderer.clone());
+        let label_birthmonth = ui::Label::new(0.15, 0.03, "Month", text_renderer.clone());
+        let label_birthday = ui::Label::new(0.2, 0.03, "Day", text_renderer.clone());
+
+        let layout_birthday_meta = ui::GridLayout::new(2, 2,
+            vec![label_birthmonth, label_birthday, layout_birthmonth, layout_birthday],
+            0.0, 0.0, 0.0, 0.0, 0.02, 0.02, rect_renderer.clone());
+
+        let layout_extra = ui::GridLayout::new(1, 11, vec![
             layout_name,
             layout_author,
             layout_height,
             layout_width,
-            layout_birthday,
             layout_favorite,
             layout_share,
             layout_copy,
             layout_gender,
             layout_favorite_color,
+            label_birthday_main,
+            layout_birthday_meta,
             ], 0.0, 0.0, 0.02, 0.02, 0.01, 0.01, rect_renderer.clone());
         layout_extra.borrow_mut().set_color((0.8, 0.8, 1.0, 0.8));
 
@@ -428,14 +446,14 @@ impl Main {
             edit_author,
             scroll_width,
             scroll_height,
-            edit_birthday_month,
-            edit_birthday_day,
             check_favorite,
             check_share,
             check_copy,
             check_male,
             check_female,
             palette_favorite_color,
+            buttons_birthmonth,
+            buttons_birthday,
             layout_extra,
         }
     }
@@ -456,8 +474,15 @@ impl Main {
         let profile = &profile_ex.main;
         self.edit_name.borrow_mut().set_text(name_to_text(&profile.name[..]));
         self.edit_author.borrow_mut().set_text(name_to_text(&profile_ex.author[..]));
-        self.edit_birthday_month.borrow_mut().set_text(profile.general.birth_month.to_string());
-        self.edit_birthday_day.borrow_mut().set_text(profile.general.birth_day.to_string());
+
+        for (i, button) in self.buttons_birthmonth.iter().enumerate() {
+            button.borrow_mut().set_selected(profile.general.birth_month as usize == i);
+        }
+
+        for (i, button) in self.buttons_birthday.iter().enumerate() {
+            button.borrow_mut().set_selected(profile.general.birth_day as usize == i);
+        }
+
         self.scroll_width.borrow_mut().set_value(profile.width as f32 / 127.0);
         self.scroll_height.borrow_mut().set_value(profile.height as f32 / 127.0);
         self.check_favorite.borrow_mut().set_checked(profile.general.favorite != 0);
@@ -734,6 +759,14 @@ impl Main {
                 _ => {
                     if event.id >= ID_PAGE_BUTTON_BEGIN && event.id < ID_PAGE_BUTTON_END {
                         self.on_page_change((event.id - ID_PAGE_BUTTON_BEGIN) as u8);
+                    } else if event.id >= ID_BIRTHMONTH_BEGIN && event.id < ID_BIRTHMONTH_BEGIN + 50 {
+                        self.database.owned[self.profile_index].main.general.birth_month =
+                            (event.id - ID_BIRTHMONTH_BEGIN) as u16;
+                        self.update_profile_extra();
+                    } else if event.id >= ID_BIRTHDAY_BEGIN && event.id < ID_BIRTHDAY_BEGIN + 50 {
+                        self.database.owned[self.profile_index].main.general.birth_day =
+                            (event.id - ID_BIRTHDAY_BEGIN) as u16;
+                        self.update_profile_extra();
                     }
                 }
             }

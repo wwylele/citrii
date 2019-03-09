@@ -41,8 +41,8 @@ bitfields!(
     #[derive(Debug, Default, Copy, Clone)]
     pub ProfileGeneral: u16 { //?
         pub sex: 1,
-        pub birth_day: 4,
-        pub birth_month: 5,
+        pub birth_month: 4,
+        pub birth_day: 5,
         pub favorite_color: 4,
         pub favorite: 1,
         padding: 1,
