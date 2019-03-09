@@ -38,17 +38,16 @@ impl TextRenderer {
         let mut x_min = x - width * 0.5;
 
         for c in text.chars() {
-            let code: u8 = if c.len_utf8() == 1 && !c.is_ascii_control() {
+            let fill = if c.len_utf8() == 1 && !c.is_ascii_control() {
                 let mut buf = [0];
                 c.encode_utf8(&mut buf);
-                buf[0]
+                let tex_x = ((buf[0] - 0x20) % FONT_X_COUNT) as f32 * FONT_WIDTH;
+                rect_renderer::Filling::Texture(&self.font, ((tex_x, 1.0), (tex_x + FONT_WIDTH, 0.0)), color)
             } else {
-                b'?'
-            } - 0x20;
+                rect_renderer::Filling::Color(color.0, color.1, color.2, 1.0)
+            };
 
-            let tex_x = (code % FONT_X_COUNT) as f32 * FONT_WIDTH;
-            self.rect_renderer.render(((x_min, y_min), (x_min + char_width, y_max)),
-                rect_renderer::Filling::Texture(&self.font, ((tex_x, 1.0), (tex_x + FONT_WIDTH, 0.0)), color));
+            self.rect_renderer.render(((x_min, y_min), (x_min + char_width, y_max)), fill);
             x_min += char_width;
         }
 

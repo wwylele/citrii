@@ -119,6 +119,8 @@ impl UIElement for TextEdit {
         (self.w, self.h)
     }
     fn render(&self, (gl_x0, gl_y0): (f32, f32), (gl_x1, gl_y1): (f32, f32)) {
+        self.rect_renderer.render(((gl_x0, gl_y0), (gl_x1, gl_y1)),
+            rect_renderer::Filling::Color(1.0, 1.0, 1.0, 0.3));
         let aspect = (self.w / (gl_x1 - gl_x0)) / (self.h / (gl_y1 - gl_y0));
         self.text_renderer.render(&self.text, ((gl_x0 + gl_x1) * 0.5, (gl_y0 + gl_y1) * 0.5),
             gl_y1 - gl_y0, (0.0, 0.0, 0.0), aspect);

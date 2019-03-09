@@ -22,6 +22,10 @@ use gl::types::*;
 
 use byte_struct::*;
 
+
+use clipboard::ClipboardProvider;
+use clipboard::ClipboardContext;
+
 const PAGE_FACE: u8 = 0;
 const PAGE_MAKEUP: u8 = 1;
 const PAGE_WRINKLE: u8 = 2;
@@ -66,6 +70,7 @@ const ID_SCALE_DEC: u32 = 208;
 const ID_SCALE_INC: u32 = 209;
 const ID_Y_SCALE_DEC: u32 = 210;
 const ID_Y_SCALE_INC: u32 = 211;
+const ID_FLIP_HAIR: u32 = 212;
 const ID_PALETTE: u32 = 300;
 const ID_EXTRA_FOLD: u32 = 400;
 const ID_FAVORITE: u32 = 500;
@@ -76,6 +81,8 @@ const ID_FEMALE: u32 = 504;
 const ID_FAVORITE_COLOR: u32 = 505;
 const ID_WIDTH: u32 = 506;
 const ID_HEIGHT: u32 = 507;
+const ID_NAME: u32 = 508;
+const ID_AUTHOR: u32 = 509;
 const ID_BIRTHMONTH_BEGIN: u32 = 600;
 const ID_BIRTHDAY_BEGIN: u32 = 700;
 
@@ -122,6 +129,7 @@ fn clamp_change_value<T: std::ops::AddAssign<T> + std::ops::SubAssign<T> + std::
 
 
 struct Main {
+    clipboard_context: Option<ClipboardContext>,
     gl_window: glutin::GlWindow,
 
     database_filename: String,
@@ -149,6 +157,7 @@ struct Main {
     button_scale_inc: Rc<RefCell<ui::Button>>,
     button_y_scale_dec: Rc<RefCell<ui::Button>>,
     button_y_scale_inc: Rc<RefCell<ui::Button>>,
+    button_flip_hair: Rc<RefCell<ui::Button>>,
 
     edit_name: Rc<RefCell<ui::TextEdit>>,
     edit_author: Rc<RefCell<ui::TextEdit>>,
@@ -167,6 +176,11 @@ struct Main {
 
 impl Main {
     fn new(asset_filename: &str, database_filename: &str, events_loop: &mut glutin::EventsLoop) -> Main {
+        let clipboard_context =
+            ClipboardProvider::new()
+            .map_err(|e|println!("Failed to get clipboard: {}", e.description()))
+            .ok();
+
         let window = glutin::WindowBuilder::new()
             .with_title("Citrii")
             .with_dimensions(LogicalSize::new(800.0, 600.0));
@@ -294,7 +308,12 @@ impl Main {
             rect_renderer.clone(),
             text_renderer.clone());
 
-        let layout_controls = ui::GridLayout::new(2, 7, vec![
+        let button_flip_hair = ui::Button::new(ID_FLIP_HAIR, 0.1, 0.1,
+            ui::ButtonContent::from_image(include_bytes!("icon/flip.png")),
+            rect_renderer.clone(),
+            text_renderer.clone());
+
+        let layout_controls = ui::GridLayout::new(2, 8, vec![
             button_style_dec, button_style_inc,
             button_y_dec.clone(), button_y_inc.clone(),
             button_x_dec.clone(), button_x_inc.clone(),
@@ -302,6 +321,7 @@ impl Main {
             button_y_scale_inc.clone(), button_y_scale_dec.clone(),
             button_rotation_dec.clone(), button_rotation_inc.clone(),
             button_scale_inc.clone(), button_scale_dec.clone(),
+            button_flip_hair.clone(), ui::Placeholder::new(),
         ], 0.02, 0.02, 0.02, 0.02, 0.01, 0.01, rect_renderer.clone());
 
         let palette = ui::Palette::new(ID_PALETTE, 0.07, 1, rect_renderer.clone());
@@ -313,13 +333,21 @@ impl Main {
         let docker_controls = ui::Docker::new(layout_controls_ex, ui::XAlign::Right, ui::YAlign::Top);
 
         let label_name = ui::Label::new(0.2, 0.04, "Name", text_renderer.clone());
-        let edit_name = ui::TextEdit::new(0.3, 0.04, rect_renderer.clone(), text_renderer.clone());
-        let layout_name = ui::GridLayout::new(2, 1, vec![label_name, edit_name.clone()],
+        let edit_name = ui::TextEdit::new(0.25, 0.04, rect_renderer.clone(), text_renderer.clone());
+        let button_name = ui::Button::new(ID_NAME, 0.04, 0.04,
+            ui::ButtonContent::from_image(include_bytes!("icon/paste.png")),
+            rect_renderer.clone(),
+            text_renderer.clone());
+        let layout_name = ui::GridLayout::new(3, 1, vec![label_name, edit_name.clone(), button_name],
             0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
 
         let label_author = ui::Label::new(0.2, 0.04, "Author", text_renderer.clone());
-        let edit_author = ui::TextEdit::new(0.3, 0.04, rect_renderer.clone(), text_renderer.clone());
-        let layout_author = ui::GridLayout::new(2, 1, vec![label_author, edit_author.clone()],
+        let edit_author = ui::TextEdit::new(0.25, 0.04, rect_renderer.clone(), text_renderer.clone());
+        let button_author = ui::Button::new(ID_AUTHOR, 0.04, 0.04,
+            ui::ButtonContent::from_image(include_bytes!("icon/paste.png")),
+            rect_renderer.clone(),
+            text_renderer.clone());
+        let layout_author = ui::GridLayout::new(3, 1, vec![label_author, edit_author.clone(), button_author],
             0.0, 0.0, 0.0, 0.0, 0.01, 0.0, rect_renderer.clone());
 
         let label_width = ui::Label::new(0.2, 0.04, "Width", text_renderer.clone());
@@ -419,6 +447,7 @@ impl Main {
         let scene = ui::Scene::new(vec![docker_pages, docker_controls, docker_extra]);
 
         Main {
+            clipboard_context,
             gl_window,
             database_filename: String::from(database_filename),
             head_renderer,
@@ -442,6 +471,7 @@ impl Main {
             button_scale_inc,
             button_y_scale_dec,
             button_y_scale_inc,
+            button_flip_hair,
             edit_name,
             edit_author,
             scroll_width,
@@ -616,6 +646,23 @@ impl Main {
         println!("Saved");
     }
 
+    fn get_string_from_clipboard(&mut self) -> Option<[u16; 10]> {
+        if let Some(c) = &mut self.clipboard_context {
+            match c.get_contents() {
+                Ok(s) => {
+                    let v: Vec<u16> = s.encode_utf16().chain(std::iter::repeat(0)).take(10).collect();
+                    Some([v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9]])
+                },
+                Err(e) => {
+                    println!("Clipboard error: {}", e);
+                    None
+                }
+            }
+        } else {
+            None
+        }
+    }
+
     fn on_page_change(&mut self, page: u8) {
         self.page = page;
         for i in 0 .. PAGE_END {
@@ -643,6 +690,7 @@ impl Main {
         self.button_scale_inc.borrow_mut().set_visible(enable_scale);
         self.button_y_scale_dec.borrow_mut().set_visible(enable_y_scale);
         self.button_y_scale_inc.borrow_mut().set_visible(enable_y_scale);
+        self.button_flip_hair.borrow_mut().set_visible(page == PAGE_HAIR);
 
         let profile = &self.database.owned[self.profile_index];
         let mut palette = self.palette.borrow_mut();
@@ -712,6 +760,10 @@ impl Main {
                 ID_SCALE_INC => self.on_scale_change(Delta::Inc),
                 ID_Y_SCALE_DEC => self.on_y_scale_change(Delta::Dec),
                 ID_Y_SCALE_INC => self.on_y_scale_change(Delta::Inc),
+                ID_FLIP_HAIR => {
+                    let flip = &mut self.database.owned[self.profile_index].main.hair.flip;
+                    *flip = 1 - *flip;
+                }
                 ID_PALETTE => self.on_color_change_from_palette(),
                 ID_EXTRA_FOLD => {
                     let visible = self.layout_extra.borrow().get_visible();
@@ -749,11 +801,23 @@ impl Main {
                     self.database.owned[self.profile_index].main.width =
                         (self.scroll_width.borrow().get_value() * 127.0).round() as u8;
                     self.update_profile_extra();
-                }
+                },
                 ID_HEIGHT => {
                     self.database.owned[self.profile_index].main.height =
                         (self.scroll_height.borrow().get_value() * 127.0).round() as u8;
                     self.update_profile_extra();
+                },
+                ID_NAME => {
+                    if let Some(s) = self.get_string_from_clipboard() {
+                        self.database.owned[self.profile_index].main.name = s;
+                        self.update_profile_extra();
+                    }
+                }
+                ID_AUTHOR => {
+                    if let Some(s) = self.get_string_from_clipboard() {
+                        self.database.owned[self.profile_index].author = s;
+                        self.update_profile_extra();
+                    }
                 }
 
                 _ => {

@@ -21,6 +21,7 @@ pub struct HeadRenderInfo {
     pub mustache: usize,
 
     pub full_hair: bool,
+    pub flip_hair: bool,
 
     pub hair_color: (f32, f32, f32),
     pub wearing_color: (f32, f32, f32),
@@ -217,7 +218,14 @@ impl HeadRenderer {
         draw_model(&self.asset.face_models, info.face);
 
         // Draw hair
-        set_object_tran(&(object_tran * cgmath::Matrix4::from_translation(hair_pos)));
+        if info.flip_hair {
+            unsafe {
+                gl::FrontFace(gl::CW);
+            }
+        }
+        let flip_matrix = cgmath::Matrix4::from_nonuniform_scale(
+            if info.flip_hair {-1.0} else {1.0}, 1.0, 1.0);
+        set_object_tran(&(object_tran * cgmath::Matrix4::from_translation(hair_pos) * flip_matrix));
         let hair_index = info.hair * 2 + if info.full_hair {0} else {1};
 
         self.head_shader.set_uniform_vec("base_color", &convert_color(&info.wearing_color, 1.0));
@@ -234,6 +242,12 @@ impl HeadRenderer {
 
         self.head_shader.set_uniform_vec("base_color", &convert_color(&info.face_color, 1.0));
         draw_model(&self.asset.scalp_models, hair_index);
+
+        if info.flip_hair {
+            unsafe {
+                gl::FrontFace(gl::CCW);
+            }
+        }
 
         // Draw beard
         set_object_tran(&(object_tran * cgmath::Matrix4::from_translation(beard_pos)));

@@ -314,6 +314,7 @@ impl Profile {
             mustache: self.misc.mustache_style as usize,
 
             full_hair: true,
+            flip_hair: self.hair.flip != 0,
 
             hair_color: get_color(&HAIR_COLOR_TABLE, self.hair.color as usize),
             wearing_color: get_color(&WEARING_COLOR_TABLE, self.general.favorite_color as usize),
