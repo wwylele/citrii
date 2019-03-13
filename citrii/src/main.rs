@@ -12,7 +12,6 @@ mod crc;
 mod ui;
 mod color;
 
-use std::io::Write;
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -189,7 +188,7 @@ impl Main {
     fn new(asset_filename: &str, database_filename: &str, events_loop: &mut glutin::EventsLoop) -> Main {
         let clipboard_context =
             ClipboardProvider::new()
-            .map_err(|e|println!("Failed to get clipboard: {}", e.description()))
+            .map_err(|e|println!("Failed to get clipboard: {}", e))
             .ok();
 
         let window = glutin::WindowBuilder::new()
@@ -740,17 +739,12 @@ impl Main {
         self.database.write_bytes(&mut database_data[..]);
         let crc_a = crc::crc16_ninty(&database_data[0 .. 0xC81E]).to_be_bytes();
         database_data[0xC81E .. 0xC820].copy_from_slice(&crc_a);
-        // TODO: write the entire file directly once the database struct is complete
-        let file = std::fs::OpenOptions::new().write(true).open(&self.database_filename);
-        if file.is_err() {
-            println!("Failed to open file");
-            return
-        }
-        if file.unwrap().write_all(&database_data[..]).is_err() {
-            println!("Failed to write file");
-            return
-        }
-        println!("Saved");
+        let crc_b = crc::crc16_ninty(&database_data[0xC820 .. 0xE4BE]).to_be_bytes();
+        database_data[0xE4BE .. 0xE4C0].copy_from_slice(&crc_b);
+        match std::fs::write(&self.database_filename, &database_data) {
+            Ok(()) => println!("Saved"),
+            Err(e) => println!("Failed to save: {}", e)
+        };
     }
 
     fn get_string_from_clipboard(&mut self) -> Option<[u16; 10]> {
