@@ -248,6 +248,10 @@ impl Button {
     pub fn set_visible(&mut self, visible: bool) {
         self.visible = visible;
     }
+
+    pub fn set_content(&mut self, content: ButtonContent) {
+        self.content = content;
+    }
 }
 
 impl UIElement for Button {

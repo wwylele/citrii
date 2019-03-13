@@ -164,7 +164,7 @@ bitfields!(
 pub struct Profile {
     pub header: ProfileHeader,
     pub system_id: [u8; 8],
-    pub char_id: ProfileId,
+    pub id: ProfileId,
     pub padding: u16,
     pub general: ProfileGeneral,
     pub name: [u16; 10],
@@ -180,6 +180,29 @@ pub struct Profile {
     pub beard: ProfileBeard,
     pub glass: ProfileGlass,
     pub mole: Mole,
+}
+
+impl Profile {
+    pub fn get_slot(&self) -> usize {
+        assert!(self.header.page < 10);
+        assert!(self.header.slot < 10);
+        (self.header.page * 10 + self.header.slot) as usize
+    }
+
+    pub fn set_slot(&mut self, slot: usize) {
+        assert!(slot < 100);
+        self.header.page = (slot / 10) as u32;
+        self.header.slot = (slot % 10) as u32;
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.id.low.creation_date == 0 &&
+        self.id.low.unknown == 0 &&
+        self.id.low.temporary == 0 &&
+        self.id.low.ntr == 0 &&
+        self.id.low.normal == 0 &&
+        self.id.mac == [0; 6]
+    }
 }
 
 #[derive(ByteStructLE, Debug, Default, Copy, Clone)]
@@ -388,6 +411,17 @@ pub struct Database {
     pub unk2: [u8; 0x12],
     pub crc_b: u16,
     pub cfhe_profiles: [ProfileAlt; 3000],
+}
+
+impl Database {
+    pub fn owned_slot_to_index(&self, slot: usize) -> Option<usize> {
+        for (i, profile) in self.owned.iter().enumerate() {
+            if !profile.main.is_null() && profile.main.get_slot() == slot {
+                return Some(i);
+            }
+        }
+        return None;
+    }
 }
 
 #[test]

@@ -85,6 +85,14 @@ const ID_NAME: u32 = 508;
 const ID_AUTHOR: u32 = 509;
 const ID_BIRTHMONTH_BEGIN: u32 = 600;
 const ID_BIRTHDAY_BEGIN: u32 = 700;
+const ID_SAVE: u32 = 800;
+const ID_PROFILE_LIST_FOLD: u32 = 900;
+const ID_PROFILE_LIST: u32 = 1000;
+const ID_PROFILE_LEFT: u32 = 1100;
+const ID_PROFILE_RIGHT: u32 = 1101;
+const ID_PROFILE_UP: u32 = 1102;
+const ID_PROFILE_DOWN: u32 = 1103;
+const ID_PROFILE_DELETE: u32 = 1104;
 
 enum Delta {
     Inc,
@@ -172,6 +180,9 @@ struct Main {
     buttons_birthmonth: Vec<Rc<RefCell<ui::Button>>>,
     buttons_birthday: Vec<Rc<RefCell<ui::Button>>>,
     layout_extra: Rc<RefCell<ui::GridLayout>>,
+    buttons_profile_list: Vec<Rc<RefCell<ui::Button>>>,
+    button_profile_delete: Rc<RefCell<ui::Button>>,
+    layout_profile_list: Rc<RefCell<ui::GridLayout>>,
 }
 
 impl Main {
@@ -432,7 +443,7 @@ impl Main {
             layout_favorite_color,
             label_birthday_main,
             layout_birthday_meta,
-            ], 0.0, 0.0, 0.02, 0.02, 0.01, 0.01, rect_renderer.clone());
+            ], 0.0, 0.0, 0.02, 0.02, 0.01, 0.005, rect_renderer.clone());
         layout_extra.borrow_mut().set_color((0.8, 0.8, 1.0, 0.8));
 
         let button_extra = ui::Button::new(ID_EXTRA_FOLD, 0.07, 0.07,
@@ -444,7 +455,70 @@ impl Main {
         layout_extra.borrow_mut().set_visible(false);
         let docker_extra = ui::Docker::new(layout_extra_ex, ui::XAlign::Center, ui::YAlign::Top);
 
-        let scene = ui::Scene::new(vec![docker_pages, docker_controls, docker_extra]);
+        let button_save = ui::Button::new(ID_SAVE, 0.07, 0.07,
+            ui::ButtonContent::from_image(include_bytes!("icon/save.png")),
+            rect_renderer.clone(),
+            text_renderer.clone());
+        let docker_save = ui::Docker::new(button_save, ui::XAlign::Left, ui::YAlign::Bottom);
+
+        let buttons_profile_list: Vec<Rc<RefCell<ui::Button>>> = (0..100).map(|i|
+                {ui::Button::new(ID_PROFILE_LIST + i, 0.05, 0.05, ui::ButtonContent::Text(i.to_string()),
+                 rect_renderer.clone(), text_renderer.clone())}
+            ).collect();
+
+        let layout_profile_list_inner = ui::GridLayout::new(10, 10,
+            buttons_profile_list.iter().cloned().map(|m|->Rc<RefCell<dyn ui::UIElement>>{m}).collect(),
+            0.01, 0.01, 0.01, 0.01, 0.005, 0.005, rect_renderer.clone());
+
+        let button_profile_left = ui::Button::new(ID_PROFILE_LEFT, 0.07, 0.07,
+            ui::ButtonContent::from_image(include_bytes!("icon/moveleft.png")),
+            rect_renderer.clone(),
+            text_renderer.clone());
+        let button_profile_right = ui::Button::new(ID_PROFILE_RIGHT, 0.07, 0.07,
+            ui::ButtonContent::from_image(include_bytes!("icon/moveright.png")),
+            rect_renderer.clone(),
+            text_renderer.clone());
+        let button_profile_up = ui::Button::new(ID_PROFILE_UP, 0.07, 0.07,
+            ui::ButtonContent::from_image(include_bytes!("icon/moveup.png")),
+            rect_renderer.clone(),
+            text_renderer.clone());
+        let button_profile_down = ui::Button::new(ID_PROFILE_DOWN, 0.07, 0.07,
+            ui::ButtonContent::from_image(include_bytes!("icon/movedown.png")),
+            rect_renderer.clone(),
+            text_renderer.clone());
+        let button_profile_delete = ui::Button::new(ID_PROFILE_DELETE, 0.07, 0.07,
+            ui::ButtonContent::from_image(include_bytes!("icon/delete.png")),
+            rect_renderer.clone(),
+            text_renderer.clone());
+
+        let layout_profile_list_control = ui::GridLayout::new(5, 1,
+            vec![
+                button_profile_left,
+                button_profile_right,
+                button_profile_up,
+                button_profile_down,
+                button_profile_delete.clone(),
+            ], 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, rect_renderer.clone());
+
+        let layout_profile_list = ui::GridLayout::new(1, 2,
+            vec![layout_profile_list_inner, layout_profile_list_control],
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, rect_renderer.clone());
+
+        layout_profile_list.borrow_mut().set_visible(false);
+        layout_profile_list.borrow_mut().set_color((0.8, 0.8, 1.0, 0.8));
+
+        let button_profile_list_fold = ui::Button::new(ID_PROFILE_LIST_FOLD, 0.07, 0.07,
+            ui::ButtonContent::from_image(include_bytes!("icon/people.png")),
+            rect_renderer.clone(),
+            text_renderer.clone());
+
+        let layout_profile_list_ex = ui::GridLayout::new(1, 2,
+            vec![button_profile_list_fold, layout_profile_list.clone()],
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, rect_renderer.clone());
+
+        let docker_profile_list = ui::Docker::new(layout_profile_list_ex, ui::XAlign::Center, ui::YAlign::Bottom);
+
+        let scene = ui::Scene::new(vec![docker_pages, docker_controls, docker_extra, docker_save, docker_profile_list]);
 
         Main {
             clipboard_context,
@@ -485,7 +559,40 @@ impl Main {
             buttons_birthmonth,
             buttons_birthday,
             layout_extra,
+            buttons_profile_list,
+            button_profile_delete,
+            layout_profile_list,
         }
+    }
+
+    fn update_profile_list(&self) {
+        let mut slot_map: [Option<usize>; 100] = [None; 100];
+        for (i, profile) in self.database.owned.iter().enumerate() {
+            if profile.main.is_null() {
+                continue;
+            }
+            let slot = profile.main.get_slot();
+            assert!(slot_map[slot] == None);
+            slot_map[slot] = Some(i);
+        }
+
+        for (j, slot) in slot_map.iter().enumerate() {
+            let mut button = self.buttons_profile_list[j].borrow_mut();
+            button.set_content(match slot {
+                None => ui::ButtonContent::from_text(""),
+                Some(i) => {
+                    ui::ButtonContent::from_text(&String::from_utf16_lossy(
+                        &[self.database.owned[*i].main.name[0]]))
+                }
+            });
+
+            button.set_selected(match slot {
+                None => false,
+                Some(i) => *i == self.profile_index
+            });
+        }
+
+        self.button_profile_delete.borrow_mut().set_visible(self.profile_index != 0);
     }
 
     fn update_profile_extra(&self) {
@@ -745,6 +852,18 @@ impl Main {
         }
     }
 
+    fn on_slot_move(&mut self, modifier: fn(usize) -> Option<usize>) {
+        let slot = self.database.owned[self.profile_index].main.get_slot();
+        if let Some(other_slot) = modifier(slot) {
+            let other = self.database.owned_slot_to_index(other_slot);
+            self.database.owned[self.profile_index].main.set_slot(other_slot);
+            if let Some(i) = other {
+                self.database.owned[i].main.set_slot(slot);
+            }
+            self.update_profile_list();
+        }
+    }
+
     fn on_ui_event(&mut self, events: Vec<ui::UIEvent>) {
         for event in events {
             match event.id {
@@ -768,6 +887,16 @@ impl Main {
                 ID_EXTRA_FOLD => {
                     let visible = self.layout_extra.borrow().get_visible();
                     self.layout_extra.borrow_mut().set_visible(!visible);
+                    if !visible {
+                        self.layout_profile_list.borrow_mut().set_visible(false);
+                    }
+                }
+                ID_PROFILE_LIST_FOLD => {
+                    let visible = self.layout_profile_list.borrow().get_visible();
+                    self.layout_profile_list.borrow_mut().set_visible(!visible);
+                    if !visible {
+                        self.layout_extra.borrow_mut().set_visible(false);
+                    }
                 }
                 ID_FAVORITE => {
                     let b = &mut self.database.owned[self.profile_index].main.general.favorite;
@@ -811,6 +940,7 @@ impl Main {
                     if let Some(s) = self.get_string_from_clipboard() {
                         self.database.owned[self.profile_index].main.name = s;
                         self.update_profile_extra();
+                        self.update_profile_list();
                     }
                 }
                 ID_AUTHOR => {
@@ -818,6 +948,39 @@ impl Main {
                         self.database.owned[self.profile_index].author = s;
                         self.update_profile_extra();
                     }
+                }
+                ID_SAVE => {
+                    self.on_save();
+                }
+                ID_PROFILE_LEFT => {
+                    fn mover(slot: usize) -> Option<usize> {
+                        if slot % 10 == 0 { None } else { Some(slot - 1) }
+                    }
+                    self.on_slot_move(mover);
+                }
+                ID_PROFILE_RIGHT => {
+                    fn mover(slot: usize) -> Option<usize> {
+                        if slot % 10 == 9 { None } else { Some(slot + 1) }
+                    }
+                    self.on_slot_move(mover);
+                }
+                ID_PROFILE_UP => {
+                    fn mover(slot: usize) -> Option<usize> {
+                        if slot / 10 == 0 { None } else { Some(slot - 10) }
+                    }
+                    self.on_slot_move(mover);
+                }
+                ID_PROFILE_DOWN => {
+                    fn mover(slot: usize) -> Option<usize> {
+                        if slot / 10 == 9 { None } else { Some(slot + 10) }
+                    }
+                    self.on_slot_move(mover);
+                }
+                ID_PROFILE_DELETE => {
+                    self.database.owned[self.profile_index] = database::ProfileFull::default();
+                    self.profile_index = 0;
+                    self.update_profile_extra();
+                    self.update_profile_list();
                 }
 
                 _ => {
@@ -831,17 +994,23 @@ impl Main {
                         self.database.owned[self.profile_index].main.general.birth_day =
                             (event.id - ID_BIRTHDAY_BEGIN) as u16;
                         self.update_profile_extra();
+                    } else if event.id >= ID_PROFILE_LIST && event.id < ID_PROFILE_LIST + 100 {
+                        let slot = (event.id - ID_PROFILE_LIST) as usize;
+                        if let Some(i) = self.database.owned_slot_to_index(slot) {
+                            self.profile_index = i;
+                            self.update_profile_extra();
+                            self.update_profile_list();
+                        }
                     }
                 }
             }
-
-
         }
     }
 
     fn run (&mut self, events_loop: &mut glutin::EventsLoop) {
         self.on_page_change(0);
         self.update_profile_extra();
+        self.update_profile_list();
 
         let mut rotate = 0.0;
         let mut running = true;
