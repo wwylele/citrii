@@ -1,6 +1,7 @@
 use crate::head_renderer;
 use crate::color::*;
 use byte_struct::*;
+use chrono::*;
 
 bitfields!(
     #[derive(Debug, Default, Copy, Clone)]
@@ -151,7 +152,7 @@ bitfields!(
 
 bitfields!(
     #[derive(Debug, Default, Copy, Clone)]
-    pub Mole: u16 { // 0x46
+    pub ProfileMole: u16 { // 0x46
         pub style: 1,
         pub scale: 4,
         pub x: 5,
@@ -179,7 +180,7 @@ pub struct Profile {
     pub misc: ProfileMisc,
     pub beard: ProfileBeard,
     pub glass: ProfileGlass,
-    pub mole: Mole,
+    pub mole: ProfileMole,
 }
 
 impl Profile {
@@ -202,6 +203,117 @@ impl Profile {
         self.id.low.ntr == 0 &&
         self.id.low.normal == 0 &&
         self.id.mac == [0; 6]
+    }
+
+    pub fn new(mac: [u8; 6], system_id: [u8; 8], time: NaiveDateTime, slot: usize) -> Profile {
+        let epoch = NaiveDateTime::new(
+            NaiveDate::from_ymd(2010, 1, 1),
+            NaiveTime::from_hms(0, 0, 0)
+        );
+        let creation_date = ((time - epoch).num_seconds() / 2) as u32;
+        Profile {
+            header: ProfileHeader {
+                three: 3,
+                allow_copying: 0,
+                private_name: 0,
+                region_lock: 0,
+                char_set: 0,
+                padding_a: 0,
+                page: (slot / 10) as u32,
+                slot: (slot % 10) as u32,
+                version_minor: 0,
+                version_major: 3,
+                padding_b: 0,
+            },
+            system_id,
+            id: ProfileId {
+                low: ProfileIdLow {
+                    creation_date,
+                    unknown: 1,
+                    temporary: 0,
+                    ntr: 0,
+                    normal: 1,
+                },
+                mac,
+            },
+            padding: 0,
+            general: ProfileGeneral {
+                sex: 1,
+                birth_month: 0,
+                birth_day: 0,
+                favorite_color: 0,
+                favorite: 0,
+                padding: 0,
+            },
+            name: [b'?' as u16, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            height: 64,
+            width: 64,
+            face: ProfileFace::default(),
+            hair: ProfileHair {
+                style: 12,
+                color: 1,
+                flip: 0,
+                padding: 0,
+            },
+            eye: ProfileEye {
+                style: 4,
+                color: 0,
+                scale: 4,
+                y_scale: 3,
+                rotation: 3,
+                x: 2,
+                y: 12,
+                padding: 0,
+            },
+            eyebrow: ProfileEyebrow {
+                style: 0,
+                color: 1,
+                scale: 4,
+                y_scale: 3,
+                padding: 0,
+                rotation: 6,
+                x: 2,
+                y: 10,
+                padding2: 0,
+            },
+            nose: ProfileNose {
+                style: 1,
+                scale: 4,
+                y: 9,
+                padding: 0,
+            },
+            lip: ProfileLip {
+                style: 23,
+                color: 0,
+                scale: 4,
+                y_scale: 3,
+            },
+            misc: ProfileMisc {
+                lip_y: 13,
+                mustache_style: 0,
+                padding: 0,
+            },
+            beard: ProfileBeard {
+                style: 0,
+                color: 0,
+                mustache_scale: 4,
+                mustache_y: 10,
+                padding: 0,
+            },
+            glass: ProfileGlass {
+                style: 0,
+                color: 0,
+                scale: 4,
+                y: 10,
+            },
+            mole: ProfileMole {
+                style: 0,
+                scale: 4,
+                x: 2,
+                y: 20,
+                padding: 0,
+            }
+        }
     }
 }
 

@@ -182,6 +182,7 @@ struct Main {
     buttons_profile_list: Vec<Rc<RefCell<ui::Button>>>,
     button_profile_delete: Rc<RefCell<ui::Button>>,
     layout_profile_list: Rc<RefCell<ui::GridLayout>>,
+    icon_new_profile: Rc<texture::Texture>,
 }
 
 impl Main {
@@ -519,6 +520,8 @@ impl Main {
 
         let scene = ui::Scene::new(vec![docker_pages, docker_controls, docker_extra, docker_save, docker_profile_list]);
 
+        let icon_new_profile = Rc::new(texture::Texture::from_png(include_bytes!("icon/new.png")));
+
         Main {
             clipboard_context,
             gl_window,
@@ -561,6 +564,7 @@ impl Main {
             buttons_profile_list,
             button_profile_delete,
             layout_profile_list,
+            icon_new_profile,
         }
     }
 
@@ -589,6 +593,11 @@ impl Main {
                 None => false,
                 Some(i) => *i == self.profile_index
             });
+
+            button.set_hover_image(match slot {
+                None => Some(self.icon_new_profile.clone()),
+                Some(_) => None,
+            })
         }
 
         self.button_profile_delete.borrow_mut().set_visible(self.profile_index != 0);
@@ -992,6 +1001,17 @@ impl Main {
                         let slot = (event.id - ID_PROFILE_LIST) as usize;
                         if let Some(i) = self.database.owned_slot_to_index(slot) {
                             self.profile_index = i;
+                            self.update_profile_extra();
+                            self.update_profile_list();
+                        } else {
+                            let index = self.database.owned.iter().position(|profile|profile.main.is_null()).unwrap();
+                            let mac = self.database.owned[0].main.id.mac.clone();
+                            let system_id = self.database.owned[0].main.system_id.clone();
+                            let now = chrono::Local::now().naive_local();
+                            self.database.owned[index].main = database::Profile::new(
+                                mac, system_id, now, slot
+                            );
+                            self.profile_index = index;
                             self.update_profile_extra();
                             self.update_profile_list();
                         }

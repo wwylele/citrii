@@ -226,6 +226,8 @@ pub struct Button {
     cursor_in: bool,
     selected: bool,
     visible: bool,
+
+    hover_image: Option<Rc<texture::Texture>>,
 }
 
 impl Button {
@@ -238,7 +240,12 @@ impl Button {
             cursor_in: false,
             selected: false,
             visible: true,
+            hover_image: None,
         }))
+    }
+
+    pub fn set_hover_image(&mut self, hover_image: Option<Rc<texture::Texture>>)  {
+        self.hover_image = hover_image;
     }
 
     pub fn set_selected(&mut self, selected: bool) {
@@ -279,6 +286,13 @@ impl UIElement for Button {
                 self.rect_renderer.render(((gl_x0, gl_y0), (gl_x1, gl_y1)),
                     rect_renderer::Filling::Texture(&image, ((0.0, 1.0), (1.0, 0.0)), (1.0, 1.0, 1.0)));
             },
+        }
+
+        if let Some(texture) = &self.hover_image {
+            if self.cursor_in {
+                self.rect_renderer.render(((gl_x0, gl_y0), (gl_x1, gl_y1)),
+                    rect_renderer::Filling::Texture(&texture, ((0.0, 1.0), (1.0, 0.0)), (1.0, 1.0, 1.0)));
+            }
         }
 
     }
