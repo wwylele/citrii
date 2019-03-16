@@ -4,7 +4,7 @@ use byte_struct::*;
 use chrono::*;
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub ProfileHeader: u32 {
         pub three: 8, // always 3?
         pub allow_copying: 1,
@@ -22,7 +22,7 @@ bitfields!(
 );
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub ProfileIdLow: u32 {
         pub creation_date: 28,
         pub unknown: 1,
@@ -32,14 +32,14 @@ bitfields!(
     }
 );
 
-#[derive(ByteStructBE, Debug, Default, Copy, Clone)]
+#[derive(ByteStructBE, Debug, Default)]
 pub struct ProfileId {
     pub low: ProfileIdLow,
     pub mac: [u8; 6]
 }
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub ProfileGeneral: u16 { //?
         pub sex: 1,
         pub birth_month: 4,
@@ -51,7 +51,7 @@ bitfields!(
 );
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub ProfileFace: u16 { // 0x30
         pub disable_sharing: 1, // ?
         pub style: 4,
@@ -62,7 +62,7 @@ bitfields!(
 );
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub ProfileHair: u16 { // 0x32
         pub style: 8,
         pub color: 3,
@@ -72,7 +72,7 @@ bitfields!(
 );
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub ProfileEye: u32 { // 0x34
         pub style: 6,
         pub color: 3,
@@ -86,7 +86,7 @@ bitfields!(
 );
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub ProfileEyebrow: u32 { // 0x38
         pub style: 5,
         pub color: 3,
@@ -101,7 +101,7 @@ bitfields!(
 );
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub ProfileNose: u16 { // 0x3C
         pub style: 5,
         pub scale: 4,
@@ -111,7 +111,7 @@ bitfields!(
 );
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub ProfileLip: u16 { // 0x3E
         pub style: 6,
         pub color: 3,
@@ -121,7 +121,7 @@ bitfields!(
 );
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub ProfileMisc: u16 { // 0x40
         pub lip_y: 5,
         pub mustache_style: 3,
@@ -130,7 +130,7 @@ bitfields!(
 );
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub ProfileBeard: u16 { // 0x42
         pub style: 3,
         pub color: 3,
@@ -141,7 +141,7 @@ bitfields!(
 );
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub ProfileGlass: u16 { // 0x44
         pub style: 4,
         pub color: 3,
@@ -151,7 +151,7 @@ bitfields!(
 );
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub ProfileMole: u16 { // 0x46
         pub style: 1,
         pub scale: 4,
@@ -161,7 +161,7 @@ bitfields!(
     }
 );
 
-#[derive(ByteStructLE, Debug, Default, Copy, Clone)]
+#[derive(ByteStructLE, Debug, Default)]
 pub struct Profile {
     pub header: ProfileHeader,
     pub system_id: [u8; 8],
@@ -317,13 +317,13 @@ impl Profile {
     }
 }
 
-#[derive(ByteStructLE, Debug, Default, Copy, Clone)]
+#[derive(ByteStructLE, Debug, Default)]
 pub struct ProfileFull {
     pub main: Profile,
     pub author: [u16; 10],
 }
 
-#[derive(ByteStructLE, Debug, Default, Copy, Clone)]
+#[derive(ByteStructLE, Debug, Default)]
 pub struct ProfileAlt {
     pub main: Profile,
     pub timestamp: u32, // seconds since 1/1/2000
@@ -490,7 +490,7 @@ impl Profile {
 }
 
 bitfields!(
-    #[derive(Debug, Default, Copy, Clone)]
+    #[derive(Debug, Default)]
     pub CFHEListNode: u32 {
         pub prev: 15,
         pub pf: 1,
@@ -499,7 +499,7 @@ bitfields!(
     }
 );
 
-#[derive(ByteStructLE, Debug, Default, Copy, Clone)]
+#[derive(ByteStructLE, Debug, Default)]
 pub struct CFHEObject {
     pub profile_id: ProfileId,
     pub list_node: CFHEListNode,

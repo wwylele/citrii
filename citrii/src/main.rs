@@ -615,7 +615,7 @@ impl Main {
             String::from_utf16_lossy(&name[0 .. end])
         }
 
-        let profile_ex = self.database.owned[self.profile_index];
+        let profile_ex = &self.database.owned[self.profile_index];
         let profile = &profile_ex.main;
         self.edit_name.borrow_mut().set_text(name_to_text(&profile.name[..]));
         self.edit_author.borrow_mut().set_text(name_to_text(&profile_ex.author[..]));
