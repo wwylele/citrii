@@ -1,6 +1,7 @@
 use byte_struct::*;
 
-#[derive(ByteStructLE)]
+#[derive(ByteStruct)]
+#[byte_struct_le]
 struct Header {
     header_length: u32,
     dir_hash_table_offset: u32,
@@ -14,7 +15,8 @@ struct Header {
     data_offset: u32,
 }
 
-#[derive(ByteStructLE)]
+#[derive(ByteStruct)]
+#[byte_struct_le]
 struct DirectoryMetadata {
     parent_dir_offset: u32,
     next_dir_offset: u32,
@@ -24,7 +26,8 @@ struct DirectoryMetadata {
     name_length: u32,
 }
 
-#[derive(ByteStructLE)]
+#[derive(ByteStruct)]
+#[byte_struct_le]
 struct FileMetadata {
     parent_dir_offset: u32,
     next_file_offset: u32,

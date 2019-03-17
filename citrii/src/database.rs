@@ -32,7 +32,8 @@ bitfields!(
     }
 );
 
-#[derive(ByteStructBE, Debug, Default)]
+#[derive(ByteStruct, Debug, Default)]
+#[byte_struct_be]
 pub struct ProfileId {
     pub low: ProfileIdLow,
     pub mac: [u8; 6]
@@ -161,7 +162,8 @@ bitfields!(
     }
 );
 
-#[derive(ByteStructLE, Debug, Default)]
+#[derive(ByteStruct, Debug, Default)]
+#[byte_struct_le]
 pub struct Profile {
     pub header: ProfileHeader,
     pub system_id: [u8; 8],
@@ -317,13 +319,15 @@ impl Profile {
     }
 }
 
-#[derive(ByteStructLE, Debug, Default)]
+#[derive(ByteStruct, Debug, Default)]
+#[byte_struct_le]
 pub struct ProfileFull {
     pub main: Profile,
     pub author: [u16; 10],
 }
 
-#[derive(ByteStructLE, Debug, Default)]
+#[derive(ByteStruct, Debug, Default)]
+#[byte_struct_le]
 pub struct ProfileAlt {
     pub main: Profile,
     pub timestamp: u32, // seconds since 1/1/2000
@@ -499,13 +503,15 @@ bitfields!(
     }
 );
 
-#[derive(ByteStructLE, Debug, Default)]
+#[derive(ByteStruct, Debug, Default)]
+#[byte_struct_le]
 pub struct CFHEObject {
     pub profile_id: ProfileId,
     pub list_node: CFHEListNode,
 }
 
-#[derive(ByteStructLE)]
+#[derive(ByteStruct)]
+#[byte_struct_le]
 pub struct Database {
     pub cfog: [u8; 4],
     pub magic: u32, // 0x00000100
