@@ -11,6 +11,7 @@ mod text_renderer;
 mod crc;
 mod ui;
 mod color;
+mod romfs;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -139,7 +140,7 @@ struct Main {
     clipboard_context: Option<ClipboardContext>,
     gl_window: glutin::GlWindow,
 
-    database_filename: String,
+    database_filename: std::path::PathBuf,
 
     head_renderer: head_renderer::HeadRenderer,
     rect_renderer: std::rc::Rc<rect_renderer::RectRenderer>,
@@ -186,7 +187,7 @@ struct Main {
 }
 
 impl Main {
-    fn new(asset_filename: &str, database_filename: &str, events_loop: &mut glutin::EventsLoop) -> Main {
+    fn new(asset_filename: std::path::PathBuf, database_filename: std::path::PathBuf, events_loop: &mut glutin::EventsLoop) -> Main {
         let clipboard_context =
             ClipboardProvider::new()
             .map_err(|e|println!("Failed to get clipboard: {}", e))
@@ -219,11 +220,12 @@ impl Main {
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         }
 
-        let asset_data = std::fs::read(asset_filename).expect("Unable to read CFL_Res.dat");
+        let asset_romfs = std::fs::read(asset_filename).expect("Unable to read RomFS");
+        let asset_data = romfs::get_romfs_file(&asset_romfs, &["CFL_Res.dat".to_string()]).expect("The provided RomFS is corrupted");;
         let asset = asset::Asset::from_bytes(&asset_data).expect("The provided CFL_Res.dat is corrupted");
         let head_renderer = head_renderer::HeadRenderer::with_asset(asset);
 
-        let database_data = std::fs::read(database_filename).expect("Unable to read CFL_Res.dat");
+        let database_data = std::fs::read(&database_filename).expect("Unable to read CFL_Res.dat");
         let crc_a = crc::crc16_ninty(&database_data[0 .. 0xC81E]);
         assert_eq!(crc_a, u16::from_be_bytes([database_data[0xC81E], database_data[0xC81F]]));
         let crc_b = crc::crc16_ninty(&database_data[0xC820 .. 0xE4BE]);
@@ -525,7 +527,7 @@ impl Main {
         Main {
             clipboard_context,
             gl_window,
-            database_filename: String::from(database_filename),
+            database_filename,
             head_renderer,
             rect_renderer,
             text_renderer,
@@ -605,13 +607,7 @@ impl Main {
 
     fn update_profile_extra(&self) {
         fn name_to_text(name: &[u16]) -> String {
-            let mut end = name.len();
-            for i in 0 .. name.len() {
-                if name[i] == 0 {
-                    end = i;
-                    break;
-                }
-            }
+            let end = name.iter().position(|&v| v == 0).unwrap_or_else(||name.len());
             String::from_utf16_lossy(&name[0 .. end])
         }
 
@@ -1198,11 +1194,14 @@ fn gl_debug_message(_source: GLenum, _type: GLenum, _id: GLuint, sev: GLenum,
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() < 3 {
-        println!("Usage: citrii [Path to CFL_Res.dat] [Path to CFL_DB.dat]");
+    if args.len() < 2 {
+        println!("Usage: citrii [Path citra user folder]");
         return;
     }
+    let citra_path = std::path::Path::new(&args[1]);
+    let asset_path = citra_path.join("nand/00000000000000000000000000000000/title/0004009b/00010202/content/00000000.app.romfs");
+    let database_path = citra_path.join("nand/data/00000000000000000000000000000000/extdata/00048000/F000000B/user/CFL_DB.dat");
     let mut events_loop = glutin::EventsLoop::new();
-    let mut instance = Main::new(&args[1], &args[2], &mut events_loop);
+    let mut instance = Main::new(asset_path, database_path, &mut events_loop);
     instance.run(&mut events_loop);
 }
