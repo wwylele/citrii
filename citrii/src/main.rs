@@ -136,6 +136,47 @@ fn clamp_change_value<T: std::ops::AddAssign<T> + std::ops::SubAssign<T> + std::
 }
 
 
+const BIRTH_DAY_RANGE: [(u16, u16); 13] = [
+    (0, 0),
+    (1, 31),
+    (1, 29),
+    (1, 31),
+    (1, 30),
+    (1, 31),
+    (1, 30),
+    (1, 31),
+    (1, 31),
+    (1, 30),
+    (1, 31),
+    (1, 30),
+    (1, 31),
+];
+
+fn clamp_birthday(month: u16, day: &mut u16) {
+    let range = BIRTH_DAY_RANGE[month as usize];
+    if *day < range.0 {
+        *day = range.0;
+    } else if *day > range.1 {
+        *day = range.1;
+    }
+}
+
+#[allow(clippy::if_same_then_else)]
+fn adjust_birthmonth(day: u16, month: &mut u16) {
+    if day == 0 {
+        *month = 0;
+    } else if *month == 0 {
+        *month = 1;
+    } else if day == 30 && *month == 2 {
+        *month = 1;
+    } else if day == 31 {
+        if let 2|4|6|9|12 = *month {
+            *month -= 1;
+        }
+    }
+}
+
+
 struct Main {
     clipboard_context: Option<ClipboardContext>,
     gl_window: glutin::GlWindow,
@@ -986,12 +1027,16 @@ impl Main {
                     if event.id >= ID_PAGE_BUTTON_BEGIN && event.id < ID_PAGE_BUTTON_END {
                         self.on_page_change((event.id - ID_PAGE_BUTTON_BEGIN) as u8);
                     } else if event.id >= ID_BIRTHMONTH_BEGIN && event.id < ID_BIRTHMONTH_BEGIN + 50 {
-                        self.database.owned[self.profile_index].main.general.birth_month =
-                            (event.id - ID_BIRTHMONTH_BEGIN) as u16;
+                        let birthmonth = (event.id - ID_BIRTHMONTH_BEGIN) as u16;
+                        let profile = &mut self.database.owned[self.profile_index].main.general;
+                        profile.birth_month = birthmonth;
+                        clamp_birthday(birthmonth, &mut profile.birth_day);
                         self.update_profile_extra();
                     } else if event.id >= ID_BIRTHDAY_BEGIN && event.id < ID_BIRTHDAY_BEGIN + 50 {
-                        self.database.owned[self.profile_index].main.general.birth_day =
-                            (event.id - ID_BIRTHDAY_BEGIN) as u16;
+                        let profile = &mut self.database.owned[self.profile_index].main.general;
+                        let birthday = (event.id - ID_BIRTHDAY_BEGIN) as u16;
+                        profile.birth_day = birthday;
+                        adjust_birthmonth(birthday, &mut profile.birth_month);
                         self.update_profile_extra();
                     } else if event.id >= ID_PROFILE_LIST && event.id < ID_PROFILE_LIST + 100 {
                         let slot = (event.id - ID_PROFILE_LIST) as usize;
