@@ -1237,7 +1237,7 @@ fn gl_debug_message(_source: GLenum, _type: GLenum, _id: GLuint, sev: GLenum,
     }
 }
 
-fn main() {
+fn main_thread() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
         println!("Usage: citrii [Path citra user folder]");
@@ -1249,4 +1249,11 @@ fn main() {
     let mut events_loop = glutin::EventsLoop::new();
     let mut instance = Main::new(asset_path, database_path, &mut events_loop);
     instance.run(&mut events_loop);
+}
+
+fn main() {
+    let thread = std::thread::Builder::new()
+        .stack_size(8 * 1024 * 1024)
+        .spawn(main_thread).expect("Failed to create main thread");
+    thread.join().expect("Failed to join main thread");
 }
