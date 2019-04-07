@@ -493,7 +493,7 @@ impl Main {
             ui::ButtonContent::from_image(include_bytes!("icon/edit.png")),
             rect_renderer.clone(),
             text_renderer.clone());
-        let layout_extra_ex = ui::GridLayout::new(1, 2, vec![layout_extra.clone(), button_extra],
+        let layout_extra_ex = ui::GridLayout::new(1, 2, vec![button_extra, layout_extra.clone()],
             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, rect_renderer.clone());
         layout_extra.borrow_mut().set_visible(false);
         let docker_extra = ui::Docker::new(layout_extra_ex, ui::XAlign::Center, ui::YAlign::Top);
@@ -556,7 +556,7 @@ impl Main {
             text_renderer.clone());
 
         let layout_profile_list_ex = ui::GridLayout::new(1, 2,
-            vec![button_profile_list_fold, layout_profile_list.clone()],
+            vec![layout_profile_list.clone(), button_profile_list_fold],
             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, rect_renderer.clone());
 
         let docker_profile_list = ui::Docker::new(layout_profile_list_ex, ui::XAlign::Center, ui::YAlign::Bottom);
@@ -1046,8 +1046,8 @@ impl Main {
                             self.update_profile_list();
                         } else {
                             let index = self.database.owned.iter().position(|profile|profile.main.is_null()).unwrap();
-                            let mac = self.database.owned[0].main.id.mac.clone();
-                            let system_id = self.database.owned[0].main.system_id.clone();
+                            let mac = self.database.owned[0].main.id.mac;
+                            let system_id = self.database.owned[0].main.system_id;
                             let now = chrono::Local::now().naive_local();
                             self.database.owned[index].main = database::Profile::new(
                                 mac, system_id, now, slot
@@ -1072,10 +1072,12 @@ impl Main {
         let mut aspect = 1.0;
         let mut window_width = 0.0;
         let mut window_height = 0.0;
+        let frame_time = std::time::Duration::from_millis(16);
+        let mut frame_timestamp = std::time::Instant::now() + frame_time;
         while running {
             events_loop.poll_events(|event| {
-                match event {
-                    glutin::Event::WindowEvent{ event, .. } => match event {
+                if let glutin::Event::WindowEvent{ event, .. } = event {
+                    match event {
                         glutin::WindowEvent::CursorEntered {..} => {
                             let events = self.scene.on_mouse_event(ui::MouseEvent::Entered, aspect);
                             self.on_ui_event(events);
@@ -1116,89 +1118,17 @@ impl Main {
                             input: glutin::KeyboardInput{state: glutin::ElementState::Pressed, virtual_keycode, ..},
                         ..} => {
                             match virtual_keycode {
-                                Some(glutin::VirtualKeyCode::A) => {
+                                Some(glutin::VirtualKeyCode::Left) => {
                                     rotate += 10.0;
                                 },
-                                Some(glutin::VirtualKeyCode::D) => {
+                                Some(glutin::VirtualKeyCode::Right) => {
                                     rotate -= 10.0;
                                 },
-
-                                Some(glutin::VirtualKeyCode::Up) => {
-                                    if self.page == 0 {
-                                        self.on_page_change(PAGE_END - 1);
-                                    } else {
-                                        self.on_page_change(self.page - 1);
-                                    }
-                                },
-
-                                Some(glutin::VirtualKeyCode::Down) => {
-                                    if self.page == PAGE_END - 1 {
-                                        self.on_page_change(0);
-                                    } else {
-                                        self.on_page_change(self.page + 1);
-                                    }
-                                },
-
-                                Some(glutin::VirtualKeyCode::Left) => {
-                                    self.on_style_change(Delta::Dec);
-                                }
-
-                                Some(glutin::VirtualKeyCode::Right) => {
-                                    self.on_style_change(Delta::Inc);
-                                }
-
-                                Some(glutin::VirtualKeyCode::F) => {
-                                    self.on_x_change(Delta::Dec);
-                                }
-                                Some(glutin::VirtualKeyCode::H) => {
-                                    self.on_x_change(Delta::Inc);
-                                }
-
-                                Some(glutin::VirtualKeyCode::T) => {
-                                    self.on_y_change(Delta::Dec);
-                                }
-                                Some(glutin::VirtualKeyCode::G) => {
-                                    self.on_y_change(Delta::Inc);
-                                }
-
-                                Some(glutin::VirtualKeyCode::R) => {
-                                    self.on_rotation_change(Delta::Dec);
-                                }
-                                Some(glutin::VirtualKeyCode::Y) => {
-                                    self.on_rotation_change(Delta::Inc);
-                                }
-
-                                Some(glutin::VirtualKeyCode::Z) => {
-                                    self.on_color_change(Delta::Dec);
-                                }
-                                Some(glutin::VirtualKeyCode::X) => {
-                                    self.on_color_change(Delta::Inc);
-                                }
-
-                                Some(glutin::VirtualKeyCode::C) => {
-                                    self.on_scale_change(Delta::Dec);
-                                }
-                                Some(glutin::VirtualKeyCode::V) => {
-                                    self.on_scale_change(Delta::Inc);
-                                }
-
-                                Some(glutin::VirtualKeyCode::B) => {
-                                    self.on_y_scale_change(Delta::Dec);
-                                }
-                                Some(glutin::VirtualKeyCode::N) => {
-                                    self.on_y_scale_change(Delta::Inc);
-                                }
-
-                                Some(glutin::VirtualKeyCode::Return) => {
-                                    self.on_save();
-                                }
-
                                 _ => ()
                             }
                         }
                         _ => ()
-                    },
-                    _ => ()
+                    }
                 }
             });
 
@@ -1220,6 +1150,12 @@ impl Main {
 
             self.scene.render(aspect);
             self.gl_window.swap_buffers().unwrap();
+
+            let now = std::time::Instant::now();
+            if now < frame_timestamp {
+                std::thread::sleep(frame_timestamp - now);
+            }
+            frame_timestamp += frame_time;
         }
     }
 }

@@ -297,6 +297,9 @@ impl UIElement for Button {
 
     }
     fn on_mouse_event(&mut self, event: MouseEvent) -> Vec<UIEvent> {
+        if !self.visible {
+            return vec![]
+        }
         match event {
             MouseEvent::Entered => {
                 self.cursor_in = true;
