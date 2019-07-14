@@ -1,6 +1,7 @@
 use crate::model::*;
 use crate::texture::*;
 use nom::*;
+use nom::number::complete::*;
 
 #[derive(Debug)]
 pub enum TextureFormat {
