@@ -262,7 +262,7 @@ impl Main {
         }
 
         let asset_romfs = std::fs::read(asset_filename).expect("Unable to read RomFS");
-        let asset_data = romfs::get_romfs_file(&asset_romfs, &["CFL_Res.dat".to_string()]).expect("The provided RomFS is corrupted");;
+        let asset_data = romfs::get_romfs_file(&asset_romfs, &["CFL_Res.dat".to_string()]).expect("The provided RomFS is corrupted");
         let asset = asset::Asset::from_bytes(&asset_data).expect("The provided CFL_Res.dat is corrupted");
         let head_renderer = head_renderer::HeadRenderer::with_asset(asset);
 
