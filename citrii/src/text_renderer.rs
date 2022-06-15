@@ -10,30 +10,44 @@ pub struct TextRenderer {
 
 impl TextRenderer {
     pub fn new(rect_renderer: std::rc::Rc<rect_renderer::RectRenderer>) -> TextRenderer {
-        if let Ok(image::DynamicImage::ImageRgba8(image_buffer))
-            = image::load_from_memory(include_bytes!("font_fira_code.PNG")) {
+        if let Ok(image::DynamicImage::ImageRgba8(image_buffer)) =
+            image::load_from_memory(include_bytes!("font_fira_code.PNG"))
+        {
             let width = image_buffer.width() as usize;
             let height = image_buffer.height() as usize;
-            let font = texture::Texture::new(width, height, &image_buffer.into_raw(),
-                &texture::WrapMode::Edge, &texture::WrapMode::Edge);
+            let font = texture::Texture::new(
+                width,
+                height,
+                &image_buffer.into_raw(),
+                &texture::WrapMode::Edge,
+                &texture::WrapMode::Edge,
+            );
             TextRenderer {
                 rect_renderer,
                 font,
                 font_width: width,
-                font_height: height
+                font_height: height,
             }
         } else {
             panic!("broken font image");
         }
     }
 
-    pub fn render(&self, text: &str, (x, y): (f32, f32), height: f32, color: (f32, f32, f32), aspect: f32) {
+    pub fn render(
+        &self,
+        text: &str,
+        (x, y): (f32, f32),
+        height: f32,
+        color: (f32, f32, f32),
+        aspect: f32,
+    ) {
         const FONT_X_COUNT: u8 = 0x5F;
         const FONT_WIDTH: f32 = 1.0 / FONT_X_COUNT as f32;
 
         let y_min = y - height * 0.5;
         let y_max = y + height * 0.5;
-        let char_width = height / (self.font_height as f32) * (FONT_WIDTH * self.font_width as f32) / aspect;
+        let char_width =
+            height / (self.font_height as f32) * (FONT_WIDTH * self.font_width as f32) / aspect;
         let width = char_width * text.chars().count() as f32;
         let mut x_min = x - width * 0.5;
 
@@ -42,14 +56,18 @@ impl TextRenderer {
                 let mut buf = [0];
                 c.encode_utf8(&mut buf);
                 let tex_x = ((buf[0] - 0x20) % FONT_X_COUNT) as f32 * FONT_WIDTH;
-                rect_renderer::Filling::Texture(&self.font, ((tex_x, 1.0), (tex_x + FONT_WIDTH, 0.0)), color)
+                rect_renderer::Filling::Texture(
+                    &self.font,
+                    ((tex_x, 1.0), (tex_x + FONT_WIDTH, 0.0)),
+                    color,
+                )
             } else {
                 rect_renderer::Filling::Color(color.0, color.1, color.2, 1.0)
             };
 
-            self.rect_renderer.render(((x_min, y_min), (x_min + char_width, y_max)), fill);
+            self.rect_renderer
+                .render(((x_min, y_min), (x_min + char_width, y_max)), fill);
             x_min += char_width;
         }
-
     }
 }

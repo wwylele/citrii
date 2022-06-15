@@ -5,11 +5,11 @@ authors = ["Weiyi Wang <wwylele@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-nom = "^5"
-gl = "*"
-glutin = "*"
-cgmath = "*"
-image = "*"
-byte_struct = "0.4.2"
+nom = "5"
+gl = "0.14"
+glutin = "0.28"
+cgmath = "0.18"
+image = "0.24"
+byte_struct = "0.7"
 clipboard = "0.5"
 chrono = "0.4"

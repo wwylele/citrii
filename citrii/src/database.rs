@@ -1,5 +1,5 @@
-use crate::head_renderer;
 use crate::color::*;
+use crate::head_renderer;
 use byte_struct::*;
 use chrono::*;
 
@@ -36,7 +36,7 @@ bitfields!(
 #[byte_struct_be]
 pub struct ProfileId {
     pub low: ProfileIdLow,
-    pub mac: [u8; 6]
+    pub mac: [u8; 6],
 }
 
 bitfields!(
@@ -199,18 +199,18 @@ impl Profile {
     }
 
     pub fn is_null(&self) -> bool {
-        self.id.low.creation_date == 0 &&
-        self.id.low.unknown == 0 &&
-        self.id.low.temporary == 0 &&
-        self.id.low.ntr == 0 &&
-        self.id.low.normal == 0 &&
-        self.id.mac == [0; 6]
+        self.id.low.creation_date == 0
+            && self.id.low.unknown == 0
+            && self.id.low.temporary == 0
+            && self.id.low.ntr == 0
+            && self.id.low.normal == 0
+            && self.id.mac == [0; 6]
     }
 
     pub fn new(mac: [u8; 6], system_id: [u8; 8], time: NaiveDateTime, slot: usize) -> Profile {
         let epoch = NaiveDateTime::new(
             NaiveDate::from_ymd(2010, 1, 1),
-            NaiveTime::from_hms(0, 0, 0)
+            NaiveTime::from_hms(0, 0, 0),
         );
         let creation_date = ((time - epoch).num_seconds() / 2) as u32;
         Profile {
@@ -314,7 +314,7 @@ impl Profile {
                 x: 2,
                 y: 20,
                 padding: 0,
-            }
+            },
         }
     }
 }
@@ -335,95 +335,12 @@ pub struct ProfileAlt {
 }
 
 const EYE_ROTATION_OFFSETS: [u32; 62] = [
-    3,
-    4,
-    4,
-    4,
-    3,
-    4,
-    4,
-    4,
-    3,
-    4,
-    4,
-    4,
-    4,
-    3,
-    3,
-    4,
-    4,
-    4,
-    3,
-    3,
-    4,
-    3,
-    4,
-    3,
-    3,
-    4,
-    3,
-    4,
-    4,
-    3,
-    4,
-    4,
-    4,
-    3,
-    3,
-    3,
-    4,
-    4,
-    3,
-    3,
-    3,
-    4,
-    4,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    4,
-    4,
-    4,
-    4,
-    3,
-    4,
-    4,
-    3,
-    4,
-    4,
+    3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4, 4, 3, 3, 4, 4, 4, 3, 3, 4, 3, 4, 3, 3, 4, 3, 4, 4, 3, 4, 4,
+    4, 3, 3, 3, 4, 4, 3, 3, 3, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 3, 4, 4, 3, 4, 4,
 ];
 
 const EYEBROW_ROTATION_OFFSETS: [u32; 24] = [
-    6,
-    6,
-    5,
-    7,
-    6,
-    7,
-    6,
-    7,
-    4,
-    7,
-    6,
-    8,
-    5,
-    5,
-    6,
-    6,
-    7,
-    7,
-    6,
-    6,
-    5,
-    6,
-    7,
-    5,
+    6, 6, 5, 7, 6, 7, 6, 7, 4, 7, 6, 8, 5, 5, 6, 6, 7, 7, 6, 6, 5, 6, 7, 5,
 ];
 
 impl Profile {
@@ -441,11 +358,19 @@ impl Profile {
             hair: self.hair.style as usize,
             face: self.face.style as usize,
             nose: self.nose.style as usize,
-            beard: if self.beard.style <= 3 {self.beard.style} else {0} as usize,
+            beard: if self.beard.style <= 3 {
+                self.beard.style
+            } else {
+                0
+            } as usize,
             glass: self.glass.style as usize,
             eye: self.eye.style as usize,
             eyebrow: self.eyebrow.style as usize,
-            beard_plain: if self.beard.style > 3 {self.beard.style - 3} else {0} as usize,
+            beard_plain: if self.beard.style > 3 {
+                self.beard.style - 3
+            } else {
+                0
+            } as usize,
             wrinkle: self.face.wrinkle as usize,
             makeup: self.face.makeup as usize,
             mole: self.mole.style as usize,
@@ -473,22 +398,37 @@ impl Profile {
             mole_width: scaling(self.mole.scale as f32) * FACE_SCALE,
             lip_y: 1.0 - (29.259 + Y_STEP * self.misc.lip_y as f32) * FACE_SCALE,
             lip_width: 6.1875 * scaling(self.lip.scale as f32) * FACE_SCALE,
-            lip_height: 4.5 * scaling(self.lip.scale as f32) * y_scaling(self.lip.y_scale as f32) * FACE_SCALE,
+            lip_height: 4.5
+                * scaling(self.lip.scale as f32)
+                * y_scaling(self.lip.y_scale as f32)
+                * FACE_SCALE,
             mustache_y: 1.0 - (31.764 + Y_STEP * self.beard.mustache_y as f32) * FACE_SCALE,
             mustache_width: 4.5 * scaling(self.beard.mustache_scale as f32) * FACE_SCALE,
             mustache_height: 9.0 * scaling(self.beard.mustache_scale as f32) * FACE_SCALE,
             eye_x: 0.88961 * self.eye.x as f32 * FACE_SCALE,
             eye_y: 1.0 - (18.452 + Y_STEP * self.eye.y as f32) * FACE_SCALE,
             eye_width: 5.3438 * scaling(self.eye.scale as f32) * FACE_SCALE,
-            eye_height: 4.5 * scaling(self.eye.scale as f32) * y_scaling(self.eye.y_scale as f32) * FACE_SCALE,
-            eye_rotation: ROTATION_STEP *
-                (self.eye.rotation as f32 - *EYE_ROTATION_OFFSETS.get(self.eye.style as usize).unwrap_or(&0) as f32),
+            eye_height: 4.5
+                * scaling(self.eye.scale as f32)
+                * y_scaling(self.eye.y_scale as f32)
+                * FACE_SCALE,
+            eye_rotation: ROTATION_STEP
+                * (self.eye.rotation as f32
+                    - *EYE_ROTATION_OFFSETS
+                        .get(self.eye.style as usize)
+                        .unwrap_or(&0) as f32),
             eyebrow_x: 0.88961 * self.eyebrow.x as f32 * FACE_SCALE,
             eyebrow_y: 1.0 - (16.55 + Y_STEP * self.eyebrow.y as f32) * FACE_SCALE,
             eyebrow_width: 5.0625 * scaling(self.eyebrow.scale as f32) * FACE_SCALE,
-            eyebrow_height: 4.5 * scaling(self.eyebrow.scale as f32) * y_scaling(self.eyebrow.y_scale as f32) * FACE_SCALE,
-            eyebrow_rotation: ROTATION_STEP *
-                (self.eyebrow.rotation as f32 - *EYEBROW_ROTATION_OFFSETS.get(self.eyebrow.style as usize).unwrap_or(&0) as f32),
+            eyebrow_height: 4.5
+                * scaling(self.eyebrow.scale as f32)
+                * y_scaling(self.eyebrow.y_scale as f32)
+                * FACE_SCALE,
+            eyebrow_rotation: ROTATION_STEP
+                * (self.eyebrow.rotation as f32
+                    - *EYEBROW_ROTATION_OFFSETS
+                        .get(self.eyebrow.style as usize)
+                        .unwrap_or(&0) as f32),
         }
     }
 }
@@ -538,7 +478,7 @@ impl Database {
                 return Some(i);
             }
         }
-        return None;
+        None
     }
 }
 

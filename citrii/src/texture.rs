@@ -12,39 +12,59 @@ impl WrapMode {
         match self {
             WrapMode::Edge => gl::CLAMP_TO_EDGE,
             WrapMode::Mirror => gl::MIRRORED_REPEAT,
-            WrapMode::Repeat => gl::REPEAT
+            WrapMode::Repeat => gl::REPEAT,
         }
     }
 }
 
 #[derive(Debug)]
 pub struct Texture {
-    handle: GLuint
+    handle: GLuint,
 }
 
 impl Texture {
-    pub fn new(width: usize, height: usize, data: &[u8], wrap_u: &WrapMode, wrap_v: &WrapMode) -> Texture {
+    pub fn new(
+        width: usize,
+        height: usize,
+        data: &[u8],
+        wrap_u: &WrapMode,
+        wrap_v: &WrapMode,
+    ) -> Texture {
         let mut handle = 0 as GLuint;
         unsafe {
             gl::GenTextures(1, &mut handle);
             gl::BindTexture(gl::TEXTURE_2D, handle);
-            gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as GLint, width as GLint, height as GLint, 0,
-                gl::RGBA, gl::UNSIGNED_BYTE, data.as_ptr() as *const GLvoid);
+            gl::TexImage2D(
+                gl::TEXTURE_2D,
+                0,
+                gl::RGBA as GLint,
+                width as GLint,
+                height as GLint,
+                0,
+                gl::RGBA,
+                gl::UNSIGNED_BYTE,
+                data.as_ptr() as *const GLvoid,
+            );
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, wrap_u.to_gl() as GLint);
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, wrap_v.to_gl() as GLint);
         }
 
-        Texture{handle}
+        Texture { handle }
     }
 
     pub fn from_png(data: &[u8]) -> Texture {
         if let Ok(image::DynamicImage::ImageRgba8(image_buffer)) = image::load_from_memory(data) {
             let width = image_buffer.width() as usize;
             let height = image_buffer.height() as usize;
-            Texture::new(width, height, &image_buffer.into_raw(),
-                &WrapMode::Edge, &WrapMode::Edge)
+            Texture::new(
+                width,
+                height,
+                &image_buffer.into_raw(),
+                &WrapMode::Edge,
+                &WrapMode::Edge,
+            )
         } else {
             panic!("broken font image")
         }

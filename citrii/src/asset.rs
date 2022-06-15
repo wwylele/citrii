@@ -1,7 +1,7 @@
 use crate::model::*;
 use crate::texture::*;
-use nom::*;
 use nom::number::complete::*;
+use nom::*;
 
 #[derive(Debug)]
 pub enum TextureFormat {
@@ -34,7 +34,7 @@ impl TextureFormat {
             9 => Some(TextureFormat::RGB5A1),
             10 => Some(TextureFormat::RGBA4),
             11 => Some(TextureFormat::RGBA8),
-            _ => None
+            _ => None,
         }
     }
 
@@ -56,10 +56,10 @@ impl TextureFormat {
     }
 
     fn decode_pixel_pair(&self, source: &[u8]) -> [u8; 8] {
-        let convert1 = |v: u8| -> u8 {v * 255};
-        let convert4 = |v: u8| -> u8 {(v << 4) | v};
-        let convert5 = |v: u8| -> u8 {(v << 3) | (v >> 2)};
-        let convert6 = |v: u8| -> u8 {(v << 2) | (v >> 4)};
+        let convert1 = |v: u8| -> u8 { v * 255 };
+        let convert4 = |v: u8| -> u8 { (v << 4) | v };
+        let convert5 = |v: u8| -> u8 { (v << 3) | (v >> 2) };
+        let convert6 = |v: u8| -> u8 { (v << 2) | (v >> 4) };
         let o = 0u8;
         let i = 255u8;
         match self {
@@ -67,89 +67,88 @@ impl TextureFormat {
                 let x = convert4(source[0] & 0xF);
                 let y = convert4(source[0] >> 4);
                 [x, x, x, i, y, y, y, i]
-            },
+            }
             TextureFormat::I8 => {
                 let x = source[0];
                 let y = source[1];
                 [x, x, x, i, y, y, y, i]
-            },
+            }
             TextureFormat::A4 => {
                 let x = convert4(source[0] & 0xF);
                 let y = convert4(source[0] >> 4);
                 [o, o, o, x, o, o, o, y]
-            },
+            }
             TextureFormat::A8 => {
                 let x = source[0];
                 let y = source[1];
                 [o, o, o, x, o, o, o, y]
-            },
+            }
             TextureFormat::IA4 => {
                 let xa = convert4(source[0] & 0xF);
                 let xi = convert4(source[0] >> 4);
                 let ya = convert4(source[1] & 0xF);
                 let yi = convert4(source[1] >> 4);
                 [xi, xi, xi, xa, yi, yi, yi, ya]
-            },
+            }
             TextureFormat::IA8 => {
                 let xa = source[0];
                 let xi = source[1];
                 let ya = source[2];
                 let yi = source[3];
                 [xi, xi, xi, xa, yi, yi, yi, ya]
-            },
+            }
             TextureFormat::RG8 => {
                 let xg = source[0];
                 let xr = source[1];
                 let yg = source[2];
                 let yr = source[3];
                 [xr, xg, o, i, yr, yg, o, i]
-            },
+            }
             TextureFormat::RGB565 => {
                 let mut dest = [0, 0, 0, 0, 0, 0, 0, 0];
-                let decode = |s: &[u8], d: &mut[u8]| {
+                let decode = |s: &[u8], d: &mut [u8]| {
                     let r = convert5(s[1] >> 3);
                     let g = convert6(((s[1] & 0b111) << 3) | (s[0] >> 5));
                     let b = convert5(s[0] & 0b11111);
                     d.copy_from_slice(&[r, g, b, i]);
                 };
-                decode(&source[0 .. 2], &mut dest[0 .. 4]);
-                decode(&source[2 .. 4], &mut dest[4 .. 8]);
+                decode(&source[0..2], &mut dest[0..4]);
+                decode(&source[2..4], &mut dest[4..8]);
                 dest
-            },
-            TextureFormat::RGB8 => {
-                [source[2], source[1], source[0], i,
-                    source[5], source[4], source[3], i]
-            },
+            }
+            TextureFormat::RGB8 => [
+                source[2], source[1], source[0], i, source[5], source[4], source[3], i,
+            ],
             TextureFormat::RGB5A1 => {
                 let mut dest = [0, 0, 0, 0, 0, 0, 0, 0];
-                let decode = |s: &[u8], d: &mut[u8]| {
+                let decode = |s: &[u8], d: &mut [u8]| {
                     let r = convert5(s[1] >> 3);
                     let g = convert5(((s[1] & 0b111) << 2) | (s[0] >> 6));
                     let b = convert5((s[0] & 0b111110) >> 1);
                     let a = convert1(s[0] & 1);
                     d.copy_from_slice(&[r, g, b, a]);
                 };
-                decode(&source[0 .. 2], &mut dest[0 .. 4]);
-                decode(&source[2 .. 4], &mut dest[4 .. 8]);
+                decode(&source[0..2], &mut dest[0..4]);
+                decode(&source[2..4], &mut dest[4..8]);
                 dest
             }
             TextureFormat::RGBA4 => {
                 let mut dest = [0, 0, 0, 0, 0, 0, 0, 0];
-                let decode = |s: &[u8], d: &mut[u8]| {
+                let decode = |s: &[u8], d: &mut [u8]| {
                     let r = convert4(s[1] >> 4);
                     let g = convert4(s[1] & 0b1111);
                     let b = convert4(s[0] >> 4);
                     let a = convert4(s[0] & 0b1111);
                     d.copy_from_slice(&[r, g, b, a]);
                 };
-                decode(&source[0 .. 2], &mut dest[0 .. 4]);
-                decode(&source[2 .. 4], &mut dest[4 .. 8]);
+                decode(&source[0..2], &mut dest[0..4]);
+                decode(&source[2..4], &mut dest[4..8]);
                 dest
             }
-            TextureFormat::RGBA8 => {
-                [source[3], source[2], source[1], source[0],
-                    source[7], source[6], source[5], source[4]]
-            },
+            TextureFormat::RGBA8 => [
+                source[3], source[2], source[1], source[0], source[7], source[6], source[5],
+                source[4],
+            ],
         }
     }
 }
@@ -160,7 +159,7 @@ impl WrapMode {
             0 => Some(WrapMode::Edge),
             1 => Some(WrapMode::Repeat),
             2 => Some(WrapMode::Mirror),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -186,13 +185,14 @@ pub struct RawTexture {
 
 impl RawTexture {
     fn decode(&self) -> Vec<u8> {
-        let mut result = Vec::<u8>::with_capacity((self.width as usize) * (self.height as usize) * 4);
+        let mut result =
+            Vec::<u8>::with_capacity((self.width as usize) * (self.height as usize) * 4);
         let padded_width = padded_size(self.width);
         let pair_size = self.format.bit_per_pixel() * 2 / 8;
         let xlut = [0x00, 0x01, 0x04, 0x05, 0x10, 0x11, 0x14, 0x15];
         let ylut = [0x00, 0x02, 0x08, 0x0a, 0x20, 0x22, 0x28, 0x2a];
-        for y in 0 .. self.height {
-            for x in (0 .. self.width).step_by(2) {
+        for y in 0..self.height {
+            for x in (0..self.width).step_by(2) {
                 let my = self.height - y - 1;
                 let cx = x / 8;
                 let cy = my / 8;
@@ -200,8 +200,11 @@ impl RawTexture {
                 let fy = my % 8;
                 let fo = xlut[fx as usize] + ylut[fy as usize];
                 let o = (((cx as usize) + (cy as usize) * padded_width / 8) * 64 + fo) / 2;
-                result.extend_from_slice(&self.format.decode_pixel_pair(
-                    &self.pixels[pair_size * o .. pair_size * (o + 1)])[..]);
+                result.extend_from_slice(
+                    &self
+                        .format
+                        .decode_pixel_pair(&self.pixels[pair_size * o..pair_size * (o + 1)])[..],
+                );
             }
         }
         result
@@ -209,7 +212,13 @@ impl RawTexture {
 
     fn bake(&self) -> Texture {
         let decoded = self.decode();
-        Texture::new(self.width as usize, self.height as usize, &decoded[..], &self.wrap_u, &self.wrap_v)
+        Texture::new(
+            self.width as usize,
+            self.height as usize,
+            &decoded[..],
+            &self.wrap_u,
+            &self.wrap_v,
+        )
     }
 }
 
@@ -257,11 +266,14 @@ pub struct RawModel {
 
 impl RawModel {
     pub fn bake(&self) -> Model {
-        let mut attribute_map = vec!((0u32, Attribute::Varying(VaryingAttribute{
-            dimension: 3,
-            data_type: AttributeType::Short,
-            offset: 0
-        })));
+        let mut attribute_map = vec![(
+            0u32,
+            Attribute::Varying(VaryingAttribute {
+                dimension: 3,
+                data_type: AttributeType::Short,
+                offset: 0,
+            }),
+        )];
         let mut stride = 6;
 
         stride += match self.normal_mode {
@@ -269,15 +281,18 @@ impl RawModel {
             AttributeMode::Common => {
                 attribute_map.push((1u32, Attribute::Short3(self.default_normal)));
                 0
-            },
+            }
             AttributeMode::Individual => {
-                attribute_map.push((1u32, Attribute::Varying(VaryingAttribute{
-                    dimension: 3,
-                    data_type: AttributeType::Short,
-                    offset: stride
-                })));
+                attribute_map.push((
+                    1u32,
+                    Attribute::Varying(VaryingAttribute {
+                        dimension: 3,
+                        data_type: AttributeType::Short,
+                        offset: stride,
+                    }),
+                ));
                 6
-            },
+            }
         };
 
         stride += match self.texcoord_mode {
@@ -285,18 +300,26 @@ impl RawModel {
             AttributeMode::Common => {
                 attribute_map.push((2u32, Attribute::Short2(self.default_texcoord)));
                 0
-            },
+            }
             AttributeMode::Individual => {
-                attribute_map.push((2u32, Attribute::Varying(VaryingAttribute{
-                    dimension: 2,
-                    data_type: AttributeType::Short,
-                    offset: stride
-                })));
+                attribute_map.push((
+                    2u32,
+                    Attribute::Varying(VaryingAttribute {
+                        dimension: 2,
+                        data_type: AttributeType::Short,
+                        offset: stride,
+                    }),
+                ));
                 4
-            },
+            }
         };
 
-        Model::new(&self.vertex_list[..], &self.index_list[..], attribute_map, stride)
+        Model::new(
+            &self.vertex_list[..],
+            &self.index_list[..],
+            attribute_map,
+            stride,
+        )
     }
 }
 
@@ -417,7 +440,7 @@ impl Asset {
     pub fn from_bytes(bytes: &[u8]) -> Option<Asset> {
         let header = match parse_header(bytes) {
             Err(_) => return None,
-            Ok((_, header)) => header
+            Ok((_, header)) => header,
         };
 
         #[derive(Debug)]
@@ -426,17 +449,18 @@ impl Asset {
             Texture(Texture),
         }
 
-        let mut section_list = Vec::<Vec<Option<Item>>>::with_capacity(header.section_offsets.len());
+        let mut section_list =
+            Vec::<Vec<Option<Item>>>::with_capacity(header.section_offsets.len());
         let mut face_configs = Vec::<Option<FaceConfig>>::new();
-        for section in 0 .. header.section_offsets.len() {
+        for section in 0..header.section_offsets.len() {
             let (item_data_chunk, section_header) =
-            match parse_section_header(&bytes[header.section_offsets[section] as usize ..]) {
-                Err(_) => return None,
-                Ok(result) => result
-            };
+                match parse_section_header(&bytes[header.section_offsets[section] as usize..]) {
+                    Err(_) => return None,
+                    Ok(result) => result,
+                };
             let item_count = section_header.item_offsets.len() - 1;
             let mut item_list = Vec::<Option<Item>>::with_capacity(item_count);
-            for item in 0 .. item_count {
+            for item in 0..item_count {
                 let mut item_k = item;
                 let mut begin = section_header.item_offsets[item_k];
                 let redirect = begin >> 22;
@@ -446,7 +470,7 @@ impl Asset {
                 }
                 begin &= 0x3FFFFF;
                 let end = section_header.item_offsets[item_k + 1] & 0x3FFFFF;
-                let item_data = &item_data_chunk[begin as usize .. end as usize];
+                let item_data = &item_data_chunk[begin as usize..end as usize];
 
                 if item_data.is_empty() {
                     item_list.push(None);
@@ -459,10 +483,10 @@ impl Asset {
                 if section >= 9 {
                     let (rest, texture) = match parse_texture(item_data) {
                         Err(_) => return None,
-                        Ok(t) => t
+                        Ok(t) => t,
                     };
                     if rest.len() >= 4 {
-                        return None
+                        return None;
                     }
                     item_list.push(Some(Item::Texture(texture.bake())));
                 } else {
@@ -470,29 +494,28 @@ impl Asset {
                         2 => {
                             let (model_data, face_config) = match parse_face_config(item_data) {
                                 Err(_) => return None,
-                                Ok(c) => c
+                                Ok(c) => c,
                             };
                             face_configs.push(Some(face_config));
                             model_data
                         }
                         5 => &item_data[0x48..],
-                        _ => item_data
+                        _ => item_data,
                     };
                     let (rest, model) = match parse_model(model_data) {
                         Err(_) => return None,
-                        Ok(m) => m
+                        Ok(m) => m,
                     };
                     if section == 6 {
                         let cover_data_len = model.index_list.len() / 3 * 2;
                         if rest.len() < cover_data_len || rest.len() >= cover_data_len + 4 {
-                            return None
+                            return None;
                         }
                     } else if rest.len() >= 4 {
-                        return None
+                        return None;
                     }
                     item_list.push(Some(Item::Model(model.bake())));
                 }
-
             }
             section_list.push(item_list);
         }
@@ -501,7 +524,7 @@ impl Asset {
             match item {
                 None => None,
                 Some(Item::Model(model)) => Some(model),
-                _ => None
+                _ => None,
             }
         };
 
@@ -509,7 +532,7 @@ impl Asset {
             match item {
                 None => None,
                 Some(Item::Texture(texture)) => Some(texture),
-                _ => None
+                _ => None,
             }
         };
 
@@ -537,7 +560,7 @@ impl Asset {
             mustache_textures: section_list[18].drain(..).map(unpack_texture).collect(),
             nose_textures: section_list[19].drain(..).map(unpack_texture).collect(),
 
-            face_configs
+            face_configs,
         };
         Some(asset)
     }
